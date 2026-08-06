@@ -1,0 +1,4 @@
+# Mockup nội bộ MakeUGC — không index.
+# Chứa bảng giá chưa public, scoping post-MVP, ghi chú nội bộ.
+User-agent: *
+Disallow: /

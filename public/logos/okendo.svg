@@ -1,0 +1,7 @@
+<!-- ⏳ XẤP XỈ, chưa phải asset chính thức. Okendo dùng wordmark chữ thường trên nền tím.
+     Cần design xin bản chính thức trước khi dùng ra ngoài (trademark). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-hidden="true">
+  <rect width="48" height="48" rx="11" fill="#6A4CF0"/>
+  <circle cx="17.5" cy="24" r="6.2" fill="none" stroke="#fff" stroke-width="3.2"/>
+  <path fill="#fff" d="M27.6 14.5h3.3v11.2l4.6-5h4.1l-5.4 5.8 5.7 7h-4.2l-4.8-6v6h-3.3V14.5Z"/>
+</svg>

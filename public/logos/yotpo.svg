@@ -1,0 +1,7 @@
+<!-- ⏳ XẤP XỈ, chưa phải asset chính thức. Yotpo dùng wordmark trên nền xanh royal.
+     Cần design xin bản chính thức trước khi dùng ra ngoài (trademark). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-hidden="true">
+  <rect width="48" height="48" rx="11" fill="#0042E4"/>
+  <path fill="#fff" d="M10.5 16h4.1l4.2 8.4L23 16h4.1l-9.4 18h-4.1l3-5.7L10.5 16Z"/>
+  <circle cx="32.5" cy="24.5" r="6.4" fill="none" stroke="#fff" stroke-width="3.2"/>
+</svg>

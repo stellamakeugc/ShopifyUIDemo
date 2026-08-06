@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+
+    // BẮT BUỘC — Polaris web components không import được, type phải nạp qua đây.
+    // Thiếu dòng này thì <s-page> báo "Property 's-page' does not exist".
+    // Đây cũng là thứ làm `npm run typecheck` verify được props đúng hay sai.
+    "types": ["@shopify/polaris-types", "vite/client"]
+  },
+  "include": ["app/**/*.ts", "app/**/*.tsx"]
+}

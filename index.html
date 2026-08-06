@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+
+    <!--
+      Polaris web components — nạp qua CDN, KHÔNG qua npm.
+      Trong app thật (Remix / React Router) hai dòng này nằm trong <head> của app/root.tsx.
+
+      meta shopify-api-key: app thật dùng %SHOPIFY_API_KEY%. Mockup dùng giá trị giả
+      vì chỉ render UI, không gọi Admin API — đã verify component vẫn render đủ.
+    -->
+    <meta name="shopify-api-key" content="mockup-not-a-real-key" />
+    <script src="https://cdn.shopify.com/shopifycloud/polaris.js"></script>
+
+    <!--
+      App Bridge — điều khiển phần admin NGOÀI iframe (nav menu, save bar, toast, resource picker).
+      Trong mockup nó không có admin host để nói chuyện với, nên các API đó không chạy —
+      chỗ nào cần thì mockup ghi comment `// In real app: shopify.*`.
+    -->
+    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+
+    <title>MakeUGC — admin mockups</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/app/entry.client.tsx"></script>
+  </body>
+</html>

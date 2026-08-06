@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output — Vercel tự build từ source, đẩy dist/ lên là thừa và gây conflict
+dist/
+*.tsbuildinfo
+
+# Vercel CLI — chứa projectId/orgId, không phải secret nhưng cũng không cần trong repo
+.vercel/
+
+# Biến môi trường. Mockup hiện KHÔNG dùng .env nào, nhưng chặn sẵn:
+# repo này public, lỡ tay commit một file .env là lộ thật.
+.env
+.env.*
+!.env.example
+
+# Log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

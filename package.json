@@ -1,0 +1,34 @@
+{
+  "name": "makeugc-mockup-app",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "description": "UI mockup app cho MakeUGC Shopify admin — Polaris web components. Dev copy-paste route vào app React Router/Remix thật.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "//deploy": "Chạy `npx vercel login` một lần trước. Xem DEPLOY.md.",
+    "deploy:preview": "npx vercel@latest deploy",
+    "deploy": "npx vercel@latest deploy --prod"
+  },
+  "//stack": "Stack chốt 03 Aug 2026 (Stella): Shopify Remix template + POLARIS WEB COMPONENTS (<s-*>), KHÔNG dùng @shopify/polaris React.",
+  "//components": "Component KHÔNG cài qua npm — là custom element global do https://cdn.shopify.com/shopifycloud/polaris.js cung cấp (xem index.html). Vì vậy KHÔNG có @shopify/polaris trong dependencies. Đúng như vậy, không phải thiếu.",
+  "//types": "@shopify/polaris-types pin @latest theo hướng dẫn Shopify — CDN luôn serve bản mới nhất nên pin cứng version sẽ lệch. Chạy `npm run typecheck` để verify props đúng.",
+  "//charts": "polaris-viz là thư viện REACT, không có web-component tương đương cho chart. Giữ tạm cho mockup — cần Duong quyết (xem MAKEUGC-UI-PATTERNS.md §7).",
+  "dependencies": {
+    "@shopify/polaris-viz": "^16.16.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0"
+  },
+  "devDependencies": {
+    "@shopify/polaris-types": "latest",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.11"
+  }
+}
