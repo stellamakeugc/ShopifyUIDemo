@@ -71,6 +71,9 @@ Skill sinh mockup: [.claude/skills/create-mockup/SKILL.md](../.claude/skills/cre
 | Spinner nhỏ | 🔴 `s-spinner size` chỉ có `base \| large \| large-100` — **không có** `small*` |
 | Hàng filter (search + select) | 🔴 `s-stack direction="inline"` **không dùng được**: hai control tự giãn full width → rơi xuống hai dòng, đẩy nội dung xuống dưới. Dùng `s-grid gridTemplateColumns="minmax(0, 2fr) minmax(0, 1fr)"` (§7j) |
 | Đọc `s-banner` lúc verify | `heading` nằm trong **shadow DOM** → `body.innerText` không thấy. Dùng `getAttribute('heading')`, nếu không sẽ kết luận nhầm là banner biến mất (§7j) |
+| **Radio group** | 🔴 `s-choice` **không có event riêng** — `change` nằm ở `s-choice-list` (`values: string[]`). Và `s-choice-list` chỉ nhận `Choice` làm con, nên **không bọc từng lựa chọn trong `s-box`** để làm thẻ: chèn box vào giữa là phá cấu trúc và mất luôn semantics radio |
+| **`slot="details"` của `s-choice`** | 🔴 **CHỈ giữ TEXT.** Nó trích và nối các text node lại, mọi markup bị bỏ — nhét `s-badge` vào ra chuỗi dính liền `"…commit.150 creditsPlaceholder"`. Viết thành một câu có dấu phân cách. **Bẫy im lặng: typecheck xanh**, chỉ mở browser mới thấy (07 Aug 2026) |
+| Đếm ký tự của `s-text-area` | Nó **tự hiện `0/200`** khi có `maxLength`. Thêm dòng đếm tay bên dưới là hiện hai lần cùng một số (07 Aug 2026) |
 
 ---
 
@@ -86,6 +89,13 @@ Web components thiếu mấy cái này — **check trước khi viết mới**:
 | `TabBar` | `Tabs` | Không có `s-tabs`. Bù khoảng trống a11y: tab đang chọn có `<s-text accessibilityVisibility="exclusive">, selected</s-text>` vì `variant` chỉ truyền tải bằng màu. **Không** dùng `accessibilityLabel` — nó thay nhãn, không thêm |
 | `SelectAllBar` | bulk actions của `IndexTable` | 🔴 `s-table` **không có row selection**. Khoảng trống enterprise nặng nhất |
 | `KpiTile` | KPI card | `s-section` + `interestFor` tooltip giải thích cách tính metric |
+| `CountdownRing` | `Spinner`/progress tròn | 🔴 Polaris **không có circular progress**. SVG + `stroke-dashoffset`, đếm bằng MỘT nguồn thời gian để vòng tròn và con số không lệch nhau. `onDone` gọi đúng một lần (có cờ chặn — interval chạy thêm một nhịp trước cleanup là bình thường) |
+| `RangeSlider` | `RangeSlider` React | 🔴 **Không có slider nào** trong 59 component. Dựng bằng `<input type="range">` native + `accentColor: #303030` (ink Polaris). Cần cho 4 slider Audio settings — `s-number-field` gõ được số nhưng mất cảm giác vị trí trên thang, mà chỉnh giọng là việc dò dần |
+| `MediaPlaceholder` | — | Ô giữ chỗ 9:16 / 3:4 cho media chưa có asset. Tinh chỉnh §9: thumbnail trong LIST thì ảnh thật được (nằm cạnh tiêu đề nên đọc ra là khung hình của video đó), nhưng thẻ **chỉ có mỗi ảnh** thì ảnh picsum chụp tường gạch đọc thẳng ra là "template về tường gạch" — và ảnh phong cảnh dán nhãn "Julian · HD" là nói dối. Dùng cho thẻ actor |
+| `FilterPills` | `s-clickable-chip` | Pill lọc: tròn hẳn, viền mảnh nền trắng, chọn = đen đặc chữ trắng. **Tự dựng** vì `s-clickable-chip` chỉ có `color: subdued\|base\|strong` — không prop nào cho radius/viền/cỡ chữ, style nằm trong shadow DOM. Đo bản Polaris: radius 8px · chữ 12px · chọn = `rgb(227,227,227)` so với `rgba(0,0,0,.06)` → **trạng thái chọn gần như không đọc được**, đó là lỗi chức năng chứ không phải chuyện đẹp xấu. Dùng `aria-pressed` nên không cần text ẩn như `TabBar` |
+| `VideoPreview` | — | Player: điều khiển **đè lên khung hình** đúng như platform (pause/play · đồng hồ · mute · fullscreen · thanh tiến trình sát mép đáy). Mặc định `playing = true` vì video tự chạy khi mở modal — hiện ▶ lúc đang chạy là nói ngược. Chỗ gọi phải truyền `key={id}` để đổi video là đồng hồ về 0. Bản đầu để điều khiển DƯỚI ảnh (né được việc `s-text`/`s-icon` không có màu trắng) nhưng đọc ra như widget audio, không ra video player — Stella đổi 07 Aug 2026 |
+
+> Từng có `TemplateShape` vẽ bố cục khung hình bằng CSS cho thẻ Content Library. **Đã gỡ 07 Aug 2026** khi có thumbnail thật (`public/templates/*.jpg`) — giữ lại là để code chết. Lấy lại từ git nếu cần fallback cho template thiếu ảnh.
 
 ### Feature components
 | Component | Làm gì |
@@ -93,6 +103,7 @@ Web components thiếu mấy cái này — **check trước khi viết mới**:
 | `CreditMeter` | Credit hard-stop: meter + cost preview + low warning + blocked + plan-gated. `compact` = chỉ meter + số (dùng trên **chính** trang AI Studio: ở đó trang tự hiện banner ở action zone và có primary action riêng, để cả hai là hai banner nói cùng một câu) |
 | `JobProgress` | Async job 4 state: queued / processing / done (kể cả partial) / failed. Card CHI TIẾT, dùng ở Home. Job KHÔNG phải AI generation thì **phải** truyền `pastVerb` (Settings → Connections dùng `"imported"`) — để mặc định `"generated"` là UI nói dối, merchant đọc "143 videos generated" và tưởng vừa tiêu 143 credit |
 | `GlobalJobProgress` | Banner GỌN cho job đang chạy, sống ở **mọi trang**. Trong app thật đặt ở layout route `app/routes/app.tsx`, không phải từng route. Không hiện cùng lúc với `JobProgress` |
+| `AiDisclaimer` | Banner disclaimer nội dung AI có checkbox, **chặn generate** tới khi merchant tick. Gate là **một lần cho mỗi shop** nên phải gắn ở CẢ HAI surface sinh video (Creator video compose + Product video); KHÔNG gắn ở gallery vì trang đó không tiêu credit. Đã bỏ biến thể `compact` và nút "Read the AI content policy" (Stella 08 Aug 2026). ⚠️ Copy "MakeUGC is not responsible…" là **nháp, chưa qua legal**: nó chuyển được nghĩa vụ *deployer* nhưng KHÔNG chuyển được nghĩa vụ *provider* (EU AI Act 50(2)) và KHÔNG chuyển được FTC 16 CFR 465 — điều khoản đó phạt cả bên **phát tán**, mà app này là bên đẩy video lên storefront |
 | `StateSwitcher` | Review tool — **xoá khi copy vào app thật**. Nhận `doc` trên từng state (rule hiển thị, panel thu gọn mặc định) + `globalNote` cho ràng buộc áp mọi state |
 | `AdminChrome` | Khung admin GIẢ của Shopify: top bar + sidebar **240px** ghim. **Xoá khi copy vào app thật.** Nav của app nằm trong sidebar đó vì App Bridge render `<ui-nav-menu>` ngoài iframe |
 
@@ -100,9 +111,9 @@ Web components thiếu mấy cái này — **check trước khi viết mới**:
 
 ---
 
-## 5. CSS — chỉ 4 ngoại lệ
+## 5. CSS — chỉ 4 ngoại lệ (+ 3 mục thêm 07 Aug 2026, xem cuối mục)
 
-Ngoài 4 cái này, thấy `style={{` là sai:
+Ngoài các cái này, thấy `style={{` là sai:
 1. Chart container height (polaris-viz cần): `<div style={{height: 280}}>`
 2. Width % của `ProgressBar` tự dựng (token không biểu diễn được chiều rộng động)
 3. **`components/AdminChrome.tsx`** — khung admin giả của harness. Top bar Shopify là nền gần đen + chữ trắng, mà `s-box background` chỉ có `transparent|subdued|base|strong` và `s-text color` chỉ có `subdued|base`; sticky + `calc(100vh - 56px)` cũng không biểu diễn được (`minBlockSize` chỉ nhận `px | % | 0`). Ngoại lệ này **chỉ** áp cho file đó — nó không phải phần app.
@@ -111,7 +122,18 @@ Ngoài 4 cái này, thấy `style={{` là sai:
 4. **`app/routes/app.billing.tsx` → `PLAN_CARD_CSS`** — plan card của trang Billing. Stella chốt 06 Aug 2026 làm giống bản tham chiếu pricing của app Shopify thật. Bốn thứ Polaris không có đường làm: **cỡ chữ lớn** cho tên plan + giá (`HeadingProps` không có size/variant, và CSS ngoài không xuyên được shadow DOM của `s-heading`), **nhấn màu** cho giá (`s-text color` chỉ `subdued|base`), **ribbon góc** (cần `position:absolute`), **viền nhấn** cho thẻ popular (`borderColor` chỉ có xám).
    ✅ **KHÔNG phá §6 brand boundary**: toàn bộ hex là `#303030` (ink Polaris, cùng giá trị `ProgressBar` dùng) + `#616161` + `#fff` — không có màu brand nào. Bản đầu dùng brand blue `#1668FF`, Stella đổi hết sang đen 06 Aug 2026. Xoá khối CSS + 4 class là quay lại Polaris thuần.
 
-Không hardcode màu — dùng token. Không inline `<svg>` — dùng `s-icon`.
+5. **`components/primitives.tsx` → `RangeSlider`** (07 Aug 2026). Track/thumb của `<input type="range">` chỉ style được qua `::-webkit-slider-thumb` / `::-moz-range-thumb`, không token Polaris nào chạm tới; `accentColor` là cách rẻ nhất để nó không xanh mặc định của browser. Hex `#303030` = ink Polaris, đúng giá trị `ProgressBar` đang dùng → không phá §6.
+
+6. **`components/primitives.tsx` → `MediaPlaceholder`** (07 Aug 2026). `s-box` không có `aspectRatio`, mà tỉ lệ 9:16 là thứ phải đúng — lưới ảnh dọc khác hẳn lưới ảnh vuông về số cột và chiều cao cuộn. Chỉ `aspectRatio` + nền `#f1f1f1` + flex căn giữa.
+
+7. **Hàng chip tự xuống dòng** — nay nằm gọn trong `FilterPills` (§4). Chỉ `display:flex; flex-wrap:wrap; gap:8`. Lý do không dùng component có sẵn: `s-stack` **không có `wrap`** (§3) nên ~35 chip tràn ngang thay vì xuống dòng, còn `s-grid` ép mọi ô bằng nhau nên `All` sẽ rộng bằng `Beauty & Personal Care`.
+   ⚠️ **Không áp dụng cho control có kích thước cố định.** 4 swatch màu da từng dùng div flex và cả bốn giãn hết chiều ngang thành 4 hàng — `s-clickable` là block nên trong flex vẫn chiếm hết. Chỗ đó phải dùng `s-grid gridTemplateColumns="repeat(4, minmax(0, 1fr))"`.
+
+8. **`components/primitives.tsx` → `FILTER_PILL_CSS`** (07 Aug 2026, Stella chốt kèm ảnh mẫu từ platform). Pill lọc cần radius tròn hẳn + viền + hover + focus-visible, mà `s-clickable-chip` không có prop nào cho những thứ đó và style của nó nằm trong shadow DOM. Cần khối `<style>` vì hover/focus **không viết được bằng inline style**. Toàn bộ hex trong dải xám/đen (`#303030` ink Polaris · `#c9c9c9` · `#8a8a8a` · `#fff`) → không phá §6. Xoá khi Shopify ship `variant="outline"` cho chip.
+
+9. **`components/primitives.tsx` → `VIDEO_PLAYER_CSS` + `PlayerIcon`** (07 Aug 2026, Stella chốt kèm ảnh platform). Ngoại lệ DUY NHẤT phá luôn rule "không inline `<svg>`": overlay player bắt buộc icon + chữ **màu trắng**, mà `s-icon` chỉ có `subdued|base` nên không dùng được. Khung biện minh giống ngoại lệ 4: **player là media chrome, không phải admin chrome** — được phép trông không-Polaris vì nó đại diện cho một thứ không-Polaris. Toàn bộ là trắng/đen/trong suốt, không màu brand.
+
+Không hardcode màu — dùng token. Không inline `<svg>` — dùng `s-icon` (ngoại lệ duy nhất: mục 9).
 
 ⚠️ **Ngoại lệ 4 không kéo theo quyền dùng ảnh.** Preview vẽ ô xám trơn, KHÔNG đưa thumbnail thật vào (xem §9): bản đầu của trang widget detail để ảnh picsum và ra một dãy ảnh phong cảnh — mắt người review dán vào nội dung ảnh thay vì vào layout, đúng cái §9 cấm. Bỏ ảnh không mất gì: mọi field (cột · gap · radius · overlay · title · CTA · dot) vẫn đọc được trên nền trơn.
 

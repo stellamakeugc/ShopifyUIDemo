@@ -1240,3 +1240,412 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
   // review, numbers are placeholders". Hệ quả: metric roadmap Phase 1
   // "Trial → paid conversion" phải đọc là *free → paid*, và KHÔNG vẽ state trial nào.
 ];
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   AI STUDIO → CONTENT LIBRARY  (07 Aug 2026 — viết lại theo SCREENSHOT platform)
+   ────────────────────────────────────────────────────────────────────────────
+   Bản đầu tôi dựng mù trước khi có ảnh và sai gần hết. Screenshot sửa:
+
+   • Filter KHÔNG phải 3 dropdown (niche · style · format). Platform dùng **MỘT dải
+     chip phẳng ~35 tag**, trộn lẫn ngành + format + style trong cùng một trục:
+     Accessories nằm cạnh Avatar Swap nằm cạnh Cinematic nằm cạnh Hook nằm cạnh Viral.
+     Không có thứ bậc. Giữ nguyên vì đó là taxonomy merchant đã quen trên platform.
+   • Card trong lưới **không có chữ nào** — chỉ video dọc. Tên + mô tả nằm trong
+     modal "Details" khi bấm vào (platform gọi là "Ad Details"; app Shopify bỏ chữ "Ad" — Stella chốt 07 Aug 2026).
+   • Giá: **150 credits** một video (Stella chốt 08 Aug 2026) — xem `VIDEO_CREDITS`.
+   • Field tên là **"Dialog"** và **"Product Description"**, cả hai trần 200 ký tự.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Taxonomy chip — copy đúng thứ tự đọc được trên screenshot, KHÔNG sắp xếp lại.
+ * Thứ tự alphabet là của platform; đảo lại thì merchant quen tay sẽ mò không ra.
+ */
+export const templateTags = [
+  'Accessories', 'Apparel', 'Apps', 'Avatar Swap', 'Beauty', 'Beauty & Personal Care',
+  'Billboards', 'Book', 'Cinematic', 'Education', 'Energy', 'Fashion', 'Fashion & Apparel',
+  'Finance', 'Food & Beverage', 'Health', 'Health & Fitness', 'Hook', 'Insurance',
+  'Lifestyle', 'Multi-Industry', 'Outdoor', 'Pets', 'Physical Goods', 'Product Showcase',
+  'Retail & Sales', 'Services', 'Skincare', 'Sports', 'Sports & Outdoor',
+  'Tech & Electronics', 'Tech Accessories', 'UGC', 'Viral',
+] as const;
+
+/**
+ * Kiểu bố cục khung hình — thứ mắt merchant bắt được trong nửa giây khi lướt lưới.
+ * Dùng cho `TemplateShape` vẽ hình dạng thay vì ảnh giả (xem primitives.tsx).
+ */
+export type TemplateShot =
+  | 'selfie'
+  | 'talking-desk'
+  | 'unboxing'
+  | 'product-closeup'
+  | 'billboard'
+  | 'flatlay';
+
+export interface VideoTemplate {
+  id: string;
+  /** Chỉ hiện trong modal Details, KHÔNG hiện trên card */
+  title: string;
+  /** Đoạn mô tả dài trong modal Details — platform viết dạng "Creates a realistic 15-second…" */
+  description: string;
+  /** Nhiều tag/template, đúng như taxonomy phẳng của platform */
+  tags: string[];
+  durationSec: number;
+  shot: TemplateShot;
+  /**
+   * Ai đang ở trong khung. Platform không hiện field này ở đâu cả — tôi THÊM vào.
+   * Lý do: output giữ nguyên người của template, nên một khuôn mặt chạy trong quảng cáo
+   * của N merchant với N kịch bản. `deliverables/research-ai-library-avatars.md` §2.3.
+   * Nếu Duong thấy không nên lộ tên thật thì đổi thành nhãn chung, đừng bỏ hẳn.
+   */
+  creator: string | null;
+  isNew?: boolean;
+}
+
+/**
+ * Giá MỘT video: **150 credits** (Stella chốt 08 Aug 2026).
+ * Khớp nút "Recreate (150 credits)" trên screenshot platform.
+ *
+ * Dùng CHUNG cho cả nhãn ở gallery lẫn nút Generate ở compose — hai chỗ nói hai số là
+ * cách nhanh nhất để merchant mất tin vào bảng giá.
+ *
+ * Ở 150/video, plan Scale 2.500 credit ≈ **16 video/tháng**. Con số này dễ thở hơn hẳn
+ * giả định 750 hồi vòng trước, nhưng allowance từng plan vẫn cần Duong chốt.
+ */
+export const VIDEO_CREDITS = 150;
+
+const TEMPLATE_RAW: [string, string, string[], string | null, TemplateShot][] = [
+  ['Casual Fashion Vlog – T-Shirt UGC', 'Creates a realistic 15-second selfie-style UGC video of a creator wearing and reviewing a T-shirt in a natural outdoor lifestyle setting. Perfect for basic tees, oversized shirts, graphic tees, streetwear, athletic T-shirts, luxury apparel, and everyday fashion brands.', ['Apparel', 'Fashion', 'UGC', 'Lifestyle'], 'Brad S.', 'selfie'],
+  ['Heel Close-Up – Luxury Footwear', 'A slow cinematic pan across the sole and heel of a designer shoe on a hardwood floor. Built for luxury footwear, statement heels, and premium accessories where the detail is the selling point.', ['Accessories', 'Fashion', 'Cinematic', 'Product Showcase'], null, 'product-closeup'],
+  ['Desk Talking Head – Professional', 'A 15-second piece to camera from a home office desk. Works for apps, SaaS, financial services, insurance, and anything that needs a credible person explaining a benefit.', ['Apps', 'Finance', 'Insurance', 'Services'], 'Marco D.', 'talking-desk'],
+  ['Logo Reveal on Tee', 'Extreme close-up on an embroidered logo on white cotton, shallow depth of field. For brand launches, drops, and merch.', ['Apparel', 'Fashion & Apparel', 'Product Showcase'], null, 'product-closeup'],
+  ['Street Cafe Sip – Beverage', 'A creator takes the first sip of a drink outside a cafe and reacts. Built for smoothies, coffee, energy drinks, and supplements in a ready-to-drink format.', ['Food & Beverage', 'Lifestyle', 'UGC'], 'Nayeli R.', 'selfie'],
+  ['Sneaker Unboxing on the Sofa', 'Hands lift a shoe out of the box and turn it to camera. The highest-converting format for footwear drops and restocks.', ['Accessories', 'Retail & Sales', 'UGC', 'Viral'], 'Alina K.', 'unboxing'],
+  ['Bedside Skincare Routine', 'A creator applies a product in soft morning light and talks through why they use it. For serums, moisturisers, and cleansers.', ['Beauty', 'Skincare', 'Beauty & Personal Care', 'UGC'], 'Priya N.', 'selfie'],
+  ['Gym Mirror Check-In', 'A quick piece to camera in a gym mirror holding the product. For supplements, activewear, and fitness equipment.', ['Health & Fitness', 'Sports', 'UGC'], 'Marcus B.', 'selfie'],
+  ['Hook: "Stop scrolling"', 'A three-second pattern interrupt built to be cut onto the front of any other video. Not a full ad on its own.', ['Hook', 'Viral', 'Multi-Industry'], 'Jess L.', 'selfie'],
+  ['Kitchen Counter Unboxing', 'Packaging opened on a clean kitchen counter with the product held up at the end. Works for most physical goods.', ['Physical Goods', 'Retail & Sales', 'UGC'], 'Ines M.', 'unboxing'],
+  ['Billboard Mockup – City', 'Your product image placed on a city billboard with traffic moving past. For brand-awareness creative, not direct response.', ['Billboards', 'Cinematic', 'Multi-Industry'], null, 'billboard'],
+  ['Avatar Swap – Talking Head', 'A neutral talking-head base built to have the face replaced with one of your own actors. The template creator is a placeholder, not the final face.', ['Avatar Swap', 'Multi-Industry', 'UGC'], 'Swappable face', 'talking-desk'],
+  ['Dog Reacts to Treat', 'A dog takes a treat and the owner narrates. For pet food, toys, and supplements.', ['Pets', 'UGC', 'Viral'], 'Chloe A.', 'product-closeup'],
+  ['Book Flip-Through', 'Hands flip through pages on a desk with a voiceover over the top. For publishers, courses, and workbooks.', ['Book', 'Education'], null, 'flatlay'],
+  ['Solar Panel Walk-Around', 'A slow walk-around of an installation with a voiceover. For energy, home improvement, and long consideration purchases.', ['Energy', 'Outdoor', 'Services'], null, 'billboard'],
+  ['Trail Run – Outdoor Gear', 'Handheld footage on a trail with the product in use. For outdoor apparel, footwear, and gear.', ['Outdoor', 'Sports & Outdoor', 'Health & Fitness'], 'Tara S.', 'selfie'],
+  ['Phone Case Drop Test', 'A phone in a case dropped onto concrete and picked back up undamaged. For tech accessories with a durability claim.', ['Tech Accessories', 'Tech & Electronics', 'Product Showcase'], 'Omar H.', 'product-closeup'],
+  ['App Screen Walkthrough', 'A hand scrolling through an app on a phone with a voiceover explaining the flow. For apps and SaaS onboarding.', ['Apps', 'Tech & Electronics', 'Education'], null, 'flatlay'],
+  ['Testimonial – Six Weeks In', 'A creator talks about using the product for six weeks. Built as a trust builder for the middle of the funnel.', ['UGC', 'Health & Fitness', 'Multi-Industry'], 'Daniel K.', 'talking-desk'],
+  ['Get Ready With Me – Mirror', 'A creator gets ready at a mirror and works the product into the routine. For beauty, fragrance, and fashion.', ['Beauty', 'Fashion', 'Lifestyle', 'UGC'], 'Mei T.', 'selfie'],
+  ['Flat Lay to Lifestyle', 'A flat lay of the product dissolves into it being used in a real setting. Works when you only have packshots.', ['Product Showcase', 'Physical Goods', 'Cinematic'], null, 'flatlay'],
+  ['Insurance Explainer – Sofa', 'A relaxed piece to camera from a living room. For insurance, finance, and anything that needs to feel unthreatening.', ['Insurance', 'Finance', 'Services'], 'Ben C.', 'talking-desk'],
+  ['Sale Announcement – Handheld', 'A fast handheld piece to camera announcing a discount. For BFCM, flash sales, and clearance.', ['Retail & Sales', 'Viral', 'Hook'], 'Sofia R.', 'selfie'],
+  ['Clinic Talking Head – Health', 'A professional in a clinical setting explaining a benefit. Note: your own claims still need to comply with the ad platform you post to.', ['Health', 'Health & Fitness', 'Services'], 'Nadia F.', 'talking-desk'],
+];
+
+export const videoTemplates: VideoTemplate[] = TEMPLATE_RAW.map(
+  ([title, description, tags, creator, shot], i) => ({
+    id: `t-${i + 1}`,
+    title,
+    description,
+    tags,
+    durationSec: 15,
+    shot,
+    creator,
+    isNew: i < 4,
+  }),
+);
+
+/**
+ * ⏳ TỰ ĐẶT — platform trông như có vài trăm template, lưới cuộn không hết trong
+ * screenshot. 24 là đủ để lộ vấn đề layout của lưới + filter; con số tổng hiện lên
+ * UI thì dùng hằng này để không nói dối là "24 of 24".
+ */
+export const TOTAL_TEMPLATES = 240;
+
+/**
+ * Thumbnail thật của template — sinh bằng `agy generate_image` 07 Aug 2026, 268×480 (9:16),
+ * để trong `public/templates/`. Thay cho `TemplateShape` vẽ tay hồi chưa có asset.
+ *
+ * ⚠️ Ảnh do AI sinh, KHÔNG phải người thật và KHÔNG phải sản phẩm có thật. Prompt cố ý
+ * chặn mọi nhãn hiệu: bản đầu ra đúng đế đỏ Louboutin (trade dress đã đăng ký) nên phải
+ * siết lại prompt và gen lại. Thay bằng frame video thật khi có.
+ */
+export function templateThumb(id: string) {
+  return `/templates/${id}.jpg`;
+}
+
+/** Mô tả bố cục cho `alt` — bố cục là thông tin, không phải trang trí */
+export const shotAlt: Record<TemplateShot, string> = {
+  selfie: 'selfie-style video, creator holding the product',
+  'talking-desk': 'creator talking to camera at a desk',
+  unboxing: 'hands opening a box',
+  'product-closeup': 'close-up of the product, no one on camera',
+  billboard: 'wide outdoor shot with the product on a billboard',
+  flatlay: 'flat lay of the product, no one on camera',
+};
+
+export function templateById(id: string): VideoTemplate {
+  return videoTemplates.find((template) => template.id === id) ?? videoTemplates[0];
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   AI STUDIO → MODEL (Mode)
+   ────────────────────────────────────────────────────────────────────────────
+   Screenshot chỉ cho thấy MỘT model: `Nova 2.0` kèm badge `Best`. Con số `750` cạnh
+   dấu `+ Credits` trên composer platform là **SỐ DƯ**, không phải giá — nó đứng yên qua
+   cả ba screenshot trong khi bộ đếm ký tự thay đổi. Giá thật là 150 (`VIDEO_CREDITS`).
+
+   ⏳ Ba model dưới đây: chỉ `nova-2` là THẬT. Hai cái còn lại là placeholder để
+   Mode selector không phải là vỏ rỗng và để review được state plan-gated. Cần
+   Duong cấp danh sách thật + credit cost từng cái trước khi dev build.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+export interface AiModel {
+  id: string;
+  name: string;
+  /** Badge cạnh tên, như `Best` của Nova 2.0 */
+  badge?: string;
+  blurb: string;
+  credits: number;
+  /** Plan tối thiểu dùng được — dưới mức này thì radio khoá + hiện đường upgrade */
+  minPlan: 'free' | 'growth' | 'scale';
+  verified: boolean;
+}
+
+export const aiModels: AiModel[] = [
+  {
+    id: 'draft',
+    name: 'Draft',
+    blurb: 'Fastest and cheapest. Good for checking a script before you commit.',
+    credits: 90,
+    minPlan: 'free',
+    verified: false,
+  },
+  {
+    id: 'nova-2',
+    name: 'Nova 2.0',
+    badge: 'Best',
+    blurb: 'Sharpest lip-sync and the most natural delivery. Use this for anything you publish.',
+    credits: VIDEO_CREDITS,
+    minPlan: 'growth',
+    verified: true,
+  },
+  {
+    id: 'nova-2-hd',
+    name: 'Nova 2.0 HD',
+    blurb: 'Same model at higher resolution. Worth it for full-screen storefront players.',
+    credits: 1200,
+    minPlan: 'scale',
+    verified: false,
+  },
+];
+
+export function modelById(id: string): AiModel {
+  return aiModels.find((model) => model.id === id) ?? aiModels[1];
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   AI STUDIO → ACTORS  (07 Aug 2026 — viết lại theo screenshot "Add Actors")
+   ────────────────────────────────────────────────────────────────────────────
+   Sửa so với bản đoán: multi-select (thanh nổi `N selected · OK · Clear`), thumbnail
+   thật chứ không phải initials, badge `HD` + `New`, thẻ `Create +` nằm ngay ô đầu
+   lưới, và filter là 5 trục: ALL/REALISTIC/STYLED/MY ACTORS · GENDER · AGE · COLOR ·
+   STYLE. Stella chốt 07 Aug 2026 giữ nguyên parity kể cả GENDER và COLOR.
+
+   HAI NGUỒN, HAI MỨC RỦI RO PHÁP LÝ:
+   • `library` — kho MakeUGC, đã ký với actor một lần từ trước → merchant dùng là
+     0 ma sát, không popup, không tickbox.
+   • `custom`  — mặt người thật merchant upload. Đây là `scan of face geometry` theo
+     Illinois BIPA §10: $1.000–$5.000/vi phạm, không cần chứng minh thiệt hại, và là
+     luật duy nhất trong nhóm CÓ quyền khởi kiện tư nhân. Vendor cũng có thể bị lôi
+     vào (*Kronos*). Chi tiết: `deliverables/research-ai-library-avatars.md` §2.2.
+
+   ⚠️ `consent` là TICKBOX (Stella chốt 07 Aug 2026), consult legal sau. Field vẫn giữ
+   dạng object `{method, at, by}` chứ không phải boolean — để ngày đổi sang consent
+   thật của chính người được lấy mặt thì chỉ thay UI, KHÔNG phải migrate avatar đã tạo.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+export const actorKinds = ['Realistic', 'Styled'] as const;
+export const actorGenders = ['Male', 'Female'] as const;
+/** 5 bậc, đúng screenshot — KHÔNG phải 4 bậc như bản đoán */
+export const actorAges = ['18-30', '30-40', '40-50', '50-60', '60+'] as const;
+/** 4 swatch màu da của platform. Hex lấy xấp xỉ từ screenshot. */
+export const actorSkinTones = [
+  {id: 'tone-1', hex: '#f2e0c0', label: 'Light'},
+  {id: 'tone-2', hex: '#dda979', label: 'Medium'},
+  {id: 'tone-3', hex: '#a8642a', label: 'Tan'},
+  {id: 'tone-4', hex: '#5c3216', label: 'Deep'},
+] as const;
+export const actorStyles = [
+  'Other', 'Professional', 'Relaxed', 'Business formal', 'Elegant', 'Casual', 'Simple',
+  'Minimalist', 'Conservative', 'Business casual', 'Sporty', 'Cozy', 'Natural',
+  'Smart casual', 'Comfy', 'Vibrant', 'Trendy', 'Classic', 'Youthful', 'Feminine',
+  'Athleisure', 'Vacation casual', 'Casual chic', 'Chic', 'Modern', 'Fresh', 'Edgy',
+  'Clean', 'Alternative', 'Bold casual',
+] as const;
+
+export interface Actor {
+  id: string;
+  name: string;
+  source: 'library' | 'custom';
+  /**
+   * ready    — dùng được
+   * training — đang dựng, chạy nền, có ETA
+   * failed   — dựng hỏng (ảnh mờ / nhiều mặt trong khung)
+   * revoked  — người đó rút quyền → khoá, và video đã publish bị GỠ KHỎI STOREFRONT
+   */
+  status: 'ready' | 'training' | 'failed' | 'revoked';
+  kind: (typeof actorKinds)[number];
+  gender: (typeof actorGenders)[number];
+  age: (typeof actorAges)[number];
+  skinTone: (typeof actorSkinTones)[number]['id'];
+  style: string;
+  hd: boolean;
+  isNew?: boolean;
+  /** Giữ dạng object cho ngày đổi sang consent thật — xem ghi chú đầu khối */
+  consent?: {method: 'merchant-attested' | 'subject-signed'; at: string; by: string};
+  /** Cần cho cảnh báo lúc revoke: bao nhiêu video đang chạy sẽ bị gỡ */
+  videoCount: number;
+  note?: string;
+}
+
+const ACTOR_RAW: [string, Actor['kind'], Actor['gender'], Actor['age'], Actor['skinTone'], string, boolean, number][] = [
+  ['Julian', 'Realistic', 'Male', '18-30', 'tone-1', 'Casual', true, 14],
+  ['Camille', 'Realistic', 'Female', '18-30', 'tone-1', 'Relaxed', true, 9],
+  ['Sienna', 'Realistic', 'Female', '18-30', 'tone-1', 'Smart casual', true, 6],
+  ['Ethan', 'Realistic', 'Male', '30-40', 'tone-2', 'Casual', true, 21],
+  ['Lina', 'Styled', 'Female', '18-30', 'tone-3', 'Bold casual', true, 3],
+  ['Chloe', 'Realistic', 'Female', '30-40', 'tone-1', 'Comfy', true, 11],
+  ['Lily 7', 'Realistic', 'Female', '40-50', 'tone-1', 'Sporty', true, 5],
+  ['Lily 6', 'Realistic', 'Female', '50-60', 'tone-1', 'Vibrant', true, 0],
+  ['Celine', 'Realistic', 'Female', '30-40', 'tone-1', 'Simple', true, 8],
+  ['Lucy 2', 'Realistic', 'Female', '30-40', 'tone-1', 'Minimalist', true, 2],
+  ['Roman', 'Realistic', 'Male', '18-30', 'tone-1', 'Alternative', true, 7],
+  ['Logan', 'Realistic', 'Male', '18-30', 'tone-2', 'Athleisure', true, 4],
+  ['Lucas', 'Realistic', 'Male', '50-60', 'tone-4', 'Professional', true, 1],
+  ['Amara', 'Realistic', 'Female', '30-40', 'tone-4', 'Chic', true, 0],
+  ['Hugo', 'Realistic', 'Male', '60+', 'tone-1', 'Conservative', true, 0],
+  ['Yuki', 'Styled', 'Female', '18-30', 'tone-2', 'Trendy', true, 6],
+  ['Grace', 'Realistic', 'Female', '40-50', 'tone-3', 'Business casual', true, 0],
+  ['Tomas', 'Realistic', 'Male', '30-40', 'tone-2', 'Natural', true, 3],
+  ['Aisha', 'Realistic', 'Female', '30-40', 'tone-4', 'Business formal', true, 12],
+  ['Elias', 'Styled', 'Male', '50-60', 'tone-1', 'Elegant', false, 0],
+  ['Nadia', 'Realistic', 'Female', '40-50', 'tone-2', 'Professional', true, 0],
+  ['Marcus', 'Realistic', 'Male', '18-30', 'tone-3', 'Sporty', true, 2],
+  ['Priya', 'Realistic', 'Female', '18-30', 'tone-3', 'Fresh', true, 9],
+  ['Ben', 'Realistic', 'Male', '60+', 'tone-1', 'Cozy', false, 1],
+];
+
+const libraryActors: Actor[] = ACTOR_RAW.map(
+  ([name, kind, gender, age, skinTone, style, hd, videoCount], i) => ({
+    id: `ac-${i + 1}`,
+    name,
+    source: 'library' as const,
+    status: 'ready' as const,
+    kind,
+    gender,
+    age,
+    skinTone,
+    style,
+    hd,
+    isNew: i < 8,
+    videoCount,
+  }),
+);
+
+/**
+ * ⏸️ CUSTOM ACTOR ĐÃ PARK (Stella chốt 07 Aug 2026) — V1 chỉ dùng kho MakeUGC.
+ *
+ * Bỏ luồng "dựng actor từ mặt người thật" khỏi app Shopify. Hệ quả tích cực: phơi nhiễm
+ * Illinois BIPA về gần 0, vì không còn `scan of face geometry` nào do merchant upload —
+ * đó là hạng mục DUY NHẤT trong nhóm có quyền khởi kiện tư nhân
+ * (`deliverables/research-ai-library-avatars.md` §2.2). Tickbox consent biến mất theo,
+ * nên không còn gì phải chờ legal review trước launch.
+ *
+ * Field `source` · `status` · `consent` GIỮ NGUYÊN trong type `Actor` dù giờ mọi actor
+ * đều là `library` + `ready`. Lý do: bật lại là thêm data, không phải thiết kế lại schema
+ * rồi migrate. Đây cũng là lý do `consent` vẫn là object chứ không phải boolean.
+ *
+ * ⚠️ Một nghĩa vụ KHÔNG mất đi khi bỏ custom actor: actor trong kho vẫn có quyền rút
+ * likeness bất cứ lúc nào (chuẩn ngành HeyGen), và khi đó video đã publish trên storefront
+ * widget của merchant phải bị gỡ. `status: 'revoked'` giữ lại trong type cho ca đó —
+ * nhưng UI xử lý nó CHƯA vẽ. Xem `open[]` của route avatars.
+ */
+
+export const actors: Actor[] = libraryActors;
+
+export function actorById(id: string): Actor | undefined {
+  return actors.find((actor) => actor.id === id);
+}
+
+/**
+ * Chân dung actor — sinh bằng `agy generate_image` 07 Aug 2026, 269×360 (3:4),
+ * để trong `public/actors/`.
+ *
+ * ⚠️ Người trong ảnh KHÔNG có thật. Prompt chặn mọi nhãn hiệu trên trang phục, cùng bộ
+ * quy tắc đã dùng cho thumbnail template (bản đầu của template ra đúng đế đỏ Louboutin —
+ * trade dress đã đăng ký — nên phải siết lại). Thay bằng ảnh actor thật khi có asset.
+ */
+export function actorPortrait(id: string) {
+  return `/actors/${id}.jpg`;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   AI STUDIO → AUDIO SETTINGS
+   Bốn slider + giá trị mặc định đọc trực tiếp từ screenshot panel "Audio settings".
+   ════════════════════════════════════════════════════════════════════════════ */
+
+export const voiceDefaults = {clarity: 0.75, tone: 0.4, emotion: 0, speed: 1} as const;
+
+export const voiceSliders = [
+  {key: 'clarity' as const, label: 'Clarity', min: 0, max: 1, step: 0.05, format: (v: number) => v.toFixed(2)},
+  {key: 'tone' as const, label: 'Tone', min: 0, max: 1, step: 0.05, format: (v: number) => v.toFixed(2)},
+  {key: 'emotion' as const, label: 'Emotion', min: 0, max: 1, step: 0.1, format: (v: number) => v.toFixed(1)},
+  {key: 'speed' as const, label: 'Speed', min: 0.5, max: 2, step: 0.1, format: (v: number) => `${v.toFixed(1)}x`},
+];
+
+/**
+ * ⏳ TỰ ĐẶT: trần ký tự của Dialog.
+ * Platform có HAI con số khác nhau — Recreate dùng 200, composer Talking Actors dùng
+ * 1500. App Shopify gộp một luồng nên phải chọn một. Lấy 200 theo Recreate vì template
+ * dài 15s cố định; 1500 ký tự không thể lọt vào 15 giây.
+ */
+export const DIALOG_MAX = 200;
+export const PRODUCT_DESC_MAX = 200;
+/** ⏳ TỰ ĐẶT: 15s thoại tự nhiên ≈ 40 từ ≈ 220 ký tự */
+export const CHARS_PER_SECOND = 220 / 15;
+
+/**
+ * Góc kể cho AI script writer — copy đúng bộ platform đang có (screenshot 07 Aug 2026):
+ * COMPARISON · CURIOSITY · PRODUCT REVIEW · PRODUCT EXPLAINER · PRODUCT RECOMMENDATIONS ·
+ * SLIGHTLY FUNNY TESTIMONIAL. Viết hoa chữ đầu cho hợp Shopify admin (platform để ALL CAPS).
+ * ⏳ Cần Duong xác nhận đúng bộ provider nhận.
+ */
+export const scriptAngles = [
+  'Comparison',
+  'Curiosity',
+  'Product review',
+  'Product explainer',
+  'Product recommendations',
+  'Slightly funny testimonial',
+] as const;
+
+/**
+ * Thẻ cảm xúc chèn THẲNG vào lời thoại dạng `[excited]`, đúng như platform hiển thị
+ * (screenshot: `[thoughtful]` và `[excited]` nằm ngay trong script, tô nền tím).
+ * ⏳ Danh sách này tôi suy từ hai thẻ nhìn thấy — cần Duong cấp bộ đầy đủ provider nhận.
+ */
+export const speechEmotions = [
+  'excited',
+  'thoughtful',
+  'curious',
+  'warm',
+  'confident',
+  'surprised',
+] as const;
+
+/** ⏸️ KHÔNG còn dùng — thay bằng `scriptAngles` khi Dialog gộp một card (07 Aug 2026) */
+export const scriptBriefPresets = [
+  {id: 'problem', label: 'Problem → fix', text: 'Start with the problem this solves, then show the product as the fix.'},
+  {id: 'social', label: 'Social proof', text: 'Talk like someone who has used it for a few weeks and is telling a friend.'},
+  {id: 'offer', label: 'Offer', text: 'Lead with the discount, then one reason the product is worth it anyway.'},
+];

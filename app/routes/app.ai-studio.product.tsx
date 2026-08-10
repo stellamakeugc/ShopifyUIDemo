@@ -22,15 +22,18 @@
  * (`deliverables/app-listing-v1-submission.md` dòng 39) mà app không có picker nào —
  * chính file đó ghi Shopify reject nếu claim không verify được.
  *
- * Route file thật: app/routes/app.ai-studio.tsx
+ * Route file thật: app/routes/app.ai-studio.product.tsx (đổi tên 08 Aug 2026 —
+ * `/app/ai-studio` giờ là Creator video, xem `components/AiStudioTabs.tsx`)
  */
 import {useState} from 'react';
 
+import AiDisclaimer from '../components/AiDisclaimer';
+import AiStudioTabs from '../components/AiStudioTabs';
 import CreditMeter from '../components/CreditMeter';
 import JobProgress, {type JobStatus} from '../components/JobProgress';
 import StateSwitcher from '../components/StateSwitcher';
 import type {StateOption} from '../components/StateSwitcher';
-import {EmptyState} from '../components/primitives';
+import {CountdownRing, EmptyState, FilterPills} from '../components/primitives';
 import {catalogProducts, productImage, promptPresets} from '../data/sample';
 import type {CatalogProduct} from '../data/sample';
 
@@ -40,6 +43,15 @@ const LARGE_BATCH = 25;
 const PROMPT_MAX = 500;
 
 const STATES: StateOption[] = [
+  {
+    value: 'disclaimer-first-run',
+    label: 'Disclaimer lần đầu — chặn generate tới khi tick',
+    doc: [
+      {section: 'Action zone', rule: 'Gate là MỘT LẦN CHO MỖI SHOP, không phải mỗi tab — nên nó phải chặn ở CẢ HAI surface sinh video (tab này và Creator video), tuỳ merchant chạm cái nào trước. Bản đầu tôi chỉ gắn ở Creator video, tab này chỉ có dòng gọn → thủng.'},
+      {section: 'Action zone', rule: 'Nút "Continue" disabled tới khi tick — nút trần thì merchant bấm qua theo phản xạ và ghi nhận thu được không đáng tin.'},
+      {section: '⚠️ Giới hạn pháp lý', rule: 'Disclaimer chuyển được nghĩa vụ DEPLOYER (EU AI Act 50(4), NY 396-b) sang merchant. KHÔNG chuyển được nghĩa vụ PROVIDER (Art 50(2) — dấu machine-readable), và KHÔNG chuyển được FTC 16 CFR 465 vì điều khoản đó phạt cả bên PHÁT TÁN — app này chính là bên đẩy video lên storefront.'},
+    ],
+  },
   {
     value: 'empty',
     label: 'Empty — chưa chọn product nào',
@@ -183,6 +195,7 @@ const DEMO_PROMPT =
 
 const SCENARIOS: Record<string, Scenario> = {
   empty: {products: [], images: {}, used: 2},
+  'disclaimer-first-run': {products: ['p-1'], images: {'p-1': [0]}, used: 2},
   // Khớp screenshot app thật: The 3p Fulfilled Snowboard, 1 ảnh
   selected: {products: ['p-1'], images: {'p-1': [0]}, used: 2},
   'prompt-custom': {
@@ -251,12 +264,20 @@ export default function AiStudio() {
     setSelectedImages(scenario.images);
     setBatchPrompt(scenario.batchPrompt ?? '');
     setImagePrompts(scenario.imagePrompts ?? {});
+    setGateStep('pending');
   };
 
   const scenario = SCENARIOS[state] ?? SCENARIOS.empty;
   const used = scenario.used;
   const remaining = Math.max(0, TOTAL_CREDITS - used);
 
+  /**
+   * Ba bước của gate disclaimer (Stella 08 Aug 2026): pending → thanks (đếm ngược 3s) →
+   * done. Nút Generate ẩn ở hai bước đầu. Gate là MỘT LẦN CHO MỖI SHOP nên có ở cả hai
+   * tab sinh video. Chi tiết: `app.ai-studio.$id.tsx`.
+   */
+  const [gateStep, setGateStep] = useState<'pending' | 'thanks' | 'done'>('pending');
+  const gateActive = is('disclaimer-first-run') && gateStep !== 'done';
   const planGated = is('plan-gated');
   const readOnly = is('no-permission');
   const loading = is('loading');
@@ -282,7 +303,9 @@ export default function AiStudio() {
   /** Vì sao Generate không bấm được — thứ tự = nguyên nhân cụ thể trước, chung sau */
   const blockedReason = planGated
     ? null
-    : readOnly
+    : gateActive
+      ? 'Confirm you understand how AI videos differ from customer reviews before generating.'
+      : readOnly
       ? 'Only staff with access to this app can spend AI credits. Ask your store owner for access.'
       : jobRunning
         ? 'A batch is already generating. Wait for it to finish so you don’t spend credits twice.'
@@ -359,7 +382,9 @@ export default function AiStudio() {
       {/* Nút Generate ĐẶT TRONG slot="primary-action" — app thật để nó ngoài slot nên
           bị cắt mất chữ ở lề phải ("Generate image…"). Batch lớn thì nút mở confirm
           modal thay vì generate luôn. */}
-      {planGated ? (
+      {/* Gate disclaimer còn hoạt động thì ẨN nút Generate — banner đang chặn cả trang và
+          tự giải thích, thêm một nút xám cạnh nó là nhiễu. Cùng cách với tab Creator video. */}
+      {gateActive ? null : planGated ? (
         <s-button slot="primary-action" variant="primary" href="/app/billing">
           Upgrade to Growth
         </s-button>
@@ -386,7 +411,29 @@ export default function AiStudio() {
           globalNote={<AiStudioPageNotes />}
         />
 
-        <ActionZone state={state} total={TOTAL_CREDITS} />
+        {/* Thêm 07 Aug 2026 — AI Studio thành 3 luồng dưới MỘT mục nav.
+            Nội dung tab này (catalog) KHÔNG đổi; chỉ thêm thanh điều hướng.
+            Lý do chọn 3 tab thay vì 3 mục nav: xem `components/AiStudioTabs.tsx`. */}
+        <AiStudioTabs active="/app/ai-studio/product" />
+
+        {gateActive && gateStep === 'pending' ? (
+          <AiDisclaimer onAcknowledge={() => setGateStep('thanks')} />
+        ) : gateStep === 'thanks' ? (
+          /* Banner cảm ơn TỰ TẮT sau 3s, vòng tròn đếm ngược bên trái.
+             Không có nút đóng: nó tự đi, thêm nút là mời merchant làm một việc vô nghĩa. */
+          <s-banner tone="success" heading="Thank you, enjoy generating!">
+            <s-grid
+              gap="small-200"
+              alignItems="center"
+              gridTemplateColumns="max-content minmax(0, 1fr)"
+            >
+              <CountdownRing seconds={3} onDone={() => setGateStep('done')} />
+              <s-text color="subdued">This closes on its own.</s-text>
+            </s-grid>
+          </s-banner>
+        ) : (
+          <ActionZone state={state} total={TOTAL_CREDITS} />
+        )}
 
         {planGated ? (
           // Plan-gated: bán giá trị + đường lên. KHÔNG ẩn tính năng.
@@ -603,17 +650,17 @@ export default function AiStudio() {
                 {/* Preset ĐIỀN vào textarea rồi sửa tiếp được — không phải mode ẩn.
                     Merchant phải thấy đúng chuỗi được gửi đi, và đọc preset là học
                     được cách viết prompt. */}
-                <s-stack direction="inline" gap="small-200" alignItems="center">
-                  {promptPresets.map((preset) => (
-                    <s-clickable-chip
-                      key={preset.id}
-                      disabled={readOnly}
-                      onClick={() => setBatchPrompt(preset.text)}
-                    >
-                      {preset.label}
-                    </s-clickable-chip>
-                  ))}
-                </s-stack>
+                {/* Đổi sang FilterPills 07 Aug 2026 để hai tab của AI Studio không có hai
+                    kiểu chip khác nhau. Nội dung preset KHÔNG đổi. */}
+                <FilterPills
+                  ariaLabel="Prompt presets"
+                  options={promptPresets.map((preset) => preset.label)}
+                  active={null}
+                  onPick={(label) => {
+                    const preset = promptPresets.find((item) => item.label === label);
+                    if (preset) setBatchPrompt(preset.text);
+                  }}
+                />
 
                 <s-text-area
                   label="What should the video show?"

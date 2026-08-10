@@ -6,7 +6,10 @@ import VideosList from './routes/app.library._index';
 import VideoDetail from './routes/app.library.$id';
 import WidgetsIndex from './routes/app.widgets._index';
 import WidgetDetail from './routes/app.widgets.$id';
-import AiStudio from './routes/app.ai-studio';
+import TemplateGallery from './routes/app.ai-studio._index';
+import TemplateCompose from './routes/app.ai-studio.$id';
+import AiStudioProduct from './routes/app.ai-studio.product';
+import AiStudioAvatars from './routes/app.ai-studio.avatars';
 import Analytics from './routes/app.analytics';
 import Billing from './routes/app.billing';
 import Settings from './routes/app.settings';
@@ -160,13 +163,57 @@ export const MOCKUPS: Mockup[] = [
   },
   {
     path: '/app/ai-studio',
-    label: 'AI Studio',
+    label: 'AI Studio — Creator video (trang đích của nav)',
+    section: 'AI Studio',
+    status: 'draft',
+    Component: TemplateGallery,
+    routeFile: 'app/routes/app.ai-studio._index.tsx',
+    description:
+      'Tab **Creator video** (đổi tên 07 Aug 2026 từ "From a template"). Port từ SCREENSHOT platform "Content Library". Filter là MỘT dải chip phẳng ~35 tag trộn ngành + format + style (Accessories cạnh Avatar Swap cạnh Cinematic cạnh Hook cạnh Viral) — không phải 3 dropdown như bản đoán đầu. Card chỉ có video dọc, không chữ; tên + mô tả nằm trong modal Details. Cố ý KHÔNG có aside (credit thuộc chỗ tiêu tiền, không thuộc chỗ duyệt hàng — và bỏ nó trả lại 966px cho lưới, 5 cột thay vì 3). Giá một video 150 credits. Modal tên là **Details** (không phải "Ad details" như platform — app này sống trong Shopify admin, video đi thẳng lên storefront chứ không phải nền tảng chạy ad), có khối VIDEO tự chạy kèm pause + đồng hồ, và chỉ có tên + mô tả đúng như platform (đã bỏ hàng tag / khối "Creator in this template" / dòng thời lượng — tên creator vẫn nằm dưới mỗi thẻ ở lưới và ở section Creator and voice của compose). 7 state.',
+    open: [
+      'Giá một video CHỐT là 150 credits (Stella 08 Aug 2026) → plan Scale 2.500 ra ≈16 video/tháng. Còn thiếu allowance của Starter và Growth — số đó chặn pricing doc trên Notion.',
+      '🛑 Thư viện thật có bao nhiêu template? Mockup có 24 mẫu và hiện tổng 240 — cả hai đều là tôi đặt.',
+      'Taxonomy có tag "Avatar Swap" như một LOẠI template. Nếu swap thành tính năng chung cho mọi template thì tag đó xử lý thế nào?',
+      'Tag row dùng div flex-wrap: `s-stack` không có `wrap` và `s-grid` ép mọi ô bằng nhau ("All" sẽ rộng bằng "Beauty & Personal Care"). Chip bên trong vẫn là `s-clickable-chip` thuần.',
+    ],
+  },
+  {
+    path: '/app/ai-studio/t-1',
+    // Gallery điều hướng tới `/app/ai-studio/{id}` cho từng template.
+    // `:id` là dynamic nên React Router xếp sau các segment tĩnh (`product`, `avatars`)
+    // — không đụng nhau.
+    alsoMatch: ['/app/ai-studio/:id'],
+    label: 'AI Studio — compose từ template',
+    section: 'AI Studio',
+    status: 'draft',
+    Component: TemplateCompose,
+    routeFile: 'app/routes/app.ai-studio.$id.tsx',
+    description:
+      'Tab **Creator video** → compose. GỘP Content Library Recreate + composer Talking Actors của platform làm một luồng. Bốn section: template (thumb trái, chữ phải) · Product (modal có search vì store có thể có hàng nghìn sản phẩm; description có nút AI "Summarise from product details") · Dialog (MỘT card, AI script writer là CHẾ ĐỘ bên trong đúng luồng platform, không phải ô nhập thứ hai; Add speech emotion chèn thẻ [excited] tại vị trí con trỏ) · Creator (**Optional**, mặc định TRỐNG — creator của template không nằm trong kho avatar, không đụng vào thì video giữ nguyên người có sẵn). ĐÃ BỎ section Quality/Mode (mặc định Nova 2.0, 150 credits/video) và ĐÃ BỎ state Free Forever — gói đó không có trong tập plan. Có gate disclaimer ba bước: banner CHẶN generate (nút Generate bị ẨN, không phải disable) → tick + Continue → banner "Thank you" tự tắt sau 3s có `CountdownRing` → Generate hiện ra. 12 state.',
+    open: [
+      '🛑 Copy disclaimer "MakeUGC is not responsible for false claims" là NHÁP, chưa qua legal. Nó chuyển được nghĩa vụ deployer (EU AI Act 50(4), NY 396-b) sang merchant nhưng KHÔNG chuyển được nghĩa vụ provider (Art 50(2) — dấu machine-readable) và KHÔNG chuyển được FTC 16 CFR 465, vì điều khoản đó phạt cả bên PHÁT TÁN — app này chính là bên đẩy video lên storefront. Thứ thật sự giảm rủi ro và CHƯA build: provenance marking trên output + badge "AI-generated" mặc định bật trên storefront widget.',
+      '⏸️ Chọn model đã PARK khỏi UI (Stella 07 Aug 2026) — mặc định Nova 2.0, một giá 150 credits. Bảng `aiModels` giữ trong sample.ts nhưng không route nào import; cần Duong cấp danh sách thật trước khi bật lại.',
+      'Allowance của Starter và Growth chưa có. Scale 2.500 ở 150/video = ≈16 video/tháng.',
+      'Trần Dialog để 200 (theo Recreate) hay 1500 (theo composer Talking Actors)? Đang để 200 vì template 15s cố định — 1500 ký tự không lọt vào 15 giây.',
+      'AI Script writer và "Generate voice preview" có tiêu credit riêng không? Đang vẽ là miễn phí.',
+      'Modal Add actors cho multi-select đúng platform, nhưng một video chỉ có một mặt → hiện chỉ dùng cái đầu. Multi-select để làm gì: sinh nhiều biến thể cùng lúc (mỗi actor một video), hay hội thoại nhiều người?',
+      '⏸️ Đã bỏ tab "My actors" và thẻ "Create +" khỏi modal Add actors — V1 không có custom actor nên để lại là dẫn merchant vào ngõ cụt.',
+      '⚠️ Audio settings là MODAL, không phải panel phải như platform: chỗ đó là slot="aside" và CreditMeter đang chiếm — mà credit là thứ cần nhìn TRONG LÚC chỉnh giọng vì "Generate voice" tiêu credit.',
+      '⚠️ Ảnh sản phẩm lấy từ Shopify catalog làm chính (platform chỉ có upload). Merchant đã có ảnh trong Shopify, bắt tải xuống rồi tải lên lại là bước thừa — nhưng cần Duong xác nhận backend nhận được ảnh từ catalog.',
+      '⏳ 15s ≈ 40 từ ≈ 220 ký tự — cả đồng hồ giây lẫn cảnh báo "trim about N words" dựa vào tỉ lệ này. ETA 2 phút suy từ tỉ lệ 1:10 của Creatify, phải verify p50/p95 thật.',
+      'Ảnh product tile vẫn là picsum qua `productImage()` — dùng CHUNG với tab catalog (vẽ từ app thật 05 Aug) nên cố ý KHÔNG sửa lệch một tab. Cùng loại vấn đề với thumbnail template đã đổi sang `MediaPlaceholder`; muốn sạch thì đổi cả hai tab một lượt.',
+      'a11y 96/100. Lỗi còn lại DUY NHẤT là class `field-details-disabled` của chính Polaris (chữ mờ trong lựa chọn bị khoá) — không sửa được từ code mình. Lý do khoá đã đẩy ra dòng riêng ở contrast bình thường nên thông tin không bị chôn trong chữ mờ.',
+    ],
+  },
+  {
+    path: '/app/ai-studio/product',
+    label: 'AI Studio — Product video',
     section: 'AI Studio',
     status: 'ready',
-    Component: AiStudio,
-    routeFile: 'app/routes/app.ai-studio.tsx',
+    Component: AiStudioProduct,
+    routeFile: 'app/routes/app.ai-studio.product.tsx',
     description:
-      'Vẽ lại 05 Aug 2026 theo app THẬT — mô hình catalog image → video, 1 ảnh = 1 credit = 1 video. Hai section: Products & images (bước 1) + Prompt (cấp batch, ghi đè lẻ từng ảnh qua modal). Cost preview + lý do Generate bị disable + banner cannot-afford/batch-lớn nằm ở aside dưới CreditMeter. Confirm có số lượng khi batch ≥25. 16 state, a11y 100/100.',
+      'Tab **Product video** (đổi tên + đổi path 08 Aug 2026: `/app/ai-studio/product`). Vẽ lại 05 Aug 2026 theo app THẬT — mô hình catalog image → video, 1 ảnh = 1 credit = 1 video. Hai section: Products & images (bước 1) + Prompt (cấp batch, ghi đè lẻ từng ảnh qua modal). Cost preview + lý do Generate bị disable + banner cannot-afford/batch-lớn nằm ở aside dưới CreditMeter. Confirm có số lượng khi batch ≥25. Có gate disclaimer ba bước giống tab Creator video (một lần cho mỗi shop nên phải chặn ở CẢ HAI tab sinh video). 17 state, a11y 100/100.',
     open: [
       '🛑 Listing đã submit claim "1000+ avatars in 50+ languages" (app-listing-v1-submission.md dòng 39) mà AI Studio KHÔNG có avatar/language picker. Chính file listing ghi Shopify reject nếu claim không verify được → phải chốt: sửa listing, hay ship avatar/language trước review. Section "Creator & language" trong mockup là slot cho nó.',
       '🛑 Credit allowance thật của Starter / Growth? Chỉ Scale = 2.500/mo là verify được từ app (mockup cũ ghi 200, lệch 12,5×). Mọi state quota phụ thuộc tỉ lệ allowance / cỡ batch.',
@@ -177,6 +224,24 @@ export const MOCKUPS: Mockup[] = [
       'Ngưỡng confirm batch (25 ảnh) và giới hạn prompt (500 ký tự) là tôi tự đặt.',
       'Fail thì credit hoàn NGAY hay cuối chu kỳ? Copy hiện nói "refunded" chung.',
       '⚠️ Không có `s-progress-bar`. Progress của job đang tự dựng bằng s-box — cần Duong xác nhận hoặc chờ Shopify ship component.',
+    ],
+  },
+  {
+    path: '/app/ai-studio/avatars',
+    label: 'AI Studio — avatars (KHÔNG CÓ ĐƯỜNG VÀO)',
+    section: 'AI Studio',
+    status: 'blocked',
+    Component: AiStudioAvatars,
+    routeFile: 'app/routes/app.ai-studio.avatars.tsx',
+    description:
+      '⛔ HIỆN KHÔNG CÓ ĐƯỜNG VÀO. Stella bỏ tab `Avatars` 07 Aug 2026 — trang chỉ để ngắm, không hành động nào, là ngõ cụt trong admin hướng-tác-vụ. Kho actor giờ sống trong modal `Add actors` của trang compose (đã bù luôn bộ lọc style sang đó). Giữ file để review và phòng khi chốt cần một trang duyệt riêng. Nội dung: kho MakeUGC 24 actor, filter gender + age 5 bậc + skin tone có nhãn chữ + ~30 chip style. 6 state.',
+    open: [
+      '🛑 Merchant xem kho actor TRƯỚC khi chọn template bằng đường nào? Bỏ tab Avatars thì kho chỉ còn trong modal của trang compose, mà muốn vào đó phải chọn template trước. Câu "các anh có creator nào giống tệp khách của tôi không?" — hỏi TRƯỚC khi quyết định nâng gói — chưa có chỗ trả lời. Reviewer Shopify đi verify claim "1000+ avatars" cũng vậy. Cách vá rẻ nhất: secondary action "Browse creators" trên trang gallery, mở đúng modal đó. CHƯA làm, chờ Stella chốt.',
+      '⏸️ ĐÃ BỎ custom actor khỏi V1 (Stella chốt 07 Aug 2026). Hệ quả TỐT: phơi nhiễm Illinois BIPA về gần 0 — không còn `scan of face geometry` nào do merchant upload, mà đó là hạng mục duy nhất trong cả nghiên cứu CÓ quyền khởi kiện tư nhân. Tickbox consent biến mất theo → không còn gì phải chờ legal review trước launch. Field `source`/`status`/`consent` vẫn giữ trong type để bật lại là thêm data, không phải migrate schema.',
+      '🛑 Bỏ custom actor KHÔNG xoá được nghĩa vụ takedown: actor trong KHO vẫn có quyền rút likeness bất cứ lúc nào (chuẩn ngành HeyGen), và khi đó video đã publish trên storefront widget của merchant phải bị gỡ. Nó chỉ đổi người rút quyền từ "nhân viên merchant" sang "actor MakeUGC". UI cho ca này CHƯA vẽ — cần Duong xác nhận backend làm được trước khi thiết kế.',
+      'Kho thật có bao nhiêu actor? Listing đã submit claim "1000+ avatars"; mockup có 24 và cố ý KHÔNG bịa số tổng.',
+      'Gói Free có bị giới hạn subset của kho không, hay duyệt hết? Đề xuất duyệt hết — 3/4 đối thủ cho free chạm avatar, khoá lưới là mất luôn lý do upgrade.',
+      '⚠️ Swatch màu da có nhãn chữ + accessibilityLabel thay vì 4 ô màu trần như platform — ô màu trần vi phạm "không truyền tải thông tin chỉ bằng màu".',
     ],
   },
   {

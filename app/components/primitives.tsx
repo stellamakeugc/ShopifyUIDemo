@@ -19,6 +19,7 @@
  * Mấy cái tự dựng này dùng `s-box`/`s-stack` + token Polaris, KHÔNG hardcode màu,
  * để nếu Shopify ship component thật thì thay vào là xong.
  */
+import {useEffect, useState} from 'react';
 import type {ReactNode} from 'react';
 
 /**
@@ -492,5 +493,457 @@ export function KpiTile({
         )}
       </s-stack>
     </s-section>
+  );
+}
+
+/**
+ * Range slider — KHÔNG có `s-range-slider`.
+ *
+ * Đã đối chiếu toàn bộ 59 component trong Custom Elements Manifest: có `s-number-field`,
+ * `s-color-picker`, `s-date-picker`, nhưng **không có slider nào**. Mà panel "Audio
+ * settings" của platform là bốn slider (Clarity · Tone · Emotion · Speed) — đó là cách
+ * duy nhất đọc được "0.75 trên thang 0–1" trong một liếc mắt. `s-number-field` gõ được
+ * số nhưng mất hẳn cảm giác vị trí trên thang, và chỉnh giọng là việc dò dần chứ không
+ * phải nhập số.
+ *
+ * ⚠️ NGOẠI LỆ CSS THỨ 5 của repo (`mockup-app/CLAUDE.md` §5). Dùng `<input type="range">`
+ * native vì:
+ *   - track/thumb của range chỉ style được qua `::-webkit-slider-thumb` / `::-moz-range-thumb`,
+ *     không có token Polaris nào chạm tới
+ *   - `accentColor` là cách rẻ nhất để nó không xanh mặc định của browser
+ * Hex `#303030` = ink Polaris, đúng giá trị `ProgressBar` phía trên đang dùng → KHÔNG phá
+ * §6 brand boundary (không có màu brand MakeUGC nào ở đây).
+ *
+ * Khi Shopify ship `s-range-slider`: thay component này, xoá `accentColor`, xong.
+ */
+export function RangeSlider({
+  label,
+  value,
+  min,
+  max,
+  step,
+  displayValue,
+  disabled = false,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  /** Chuỗi đã format sẵn ("0.75", "1.0x") — chỗ gọi biết đơn vị, component thì không */
+  displayValue: string;
+  disabled?: boolean;
+  onChange: (value: number) => void;
+}) {
+  const id = `slider-${label.toLowerCase().replace(/\s+/g, '-')}`;
+
+  return (
+    <s-stack direction="block" gap="small-500">
+      {/* Giá trị đặt cạnh nhãn chứ không dưới thumb: thumb di chuyển nên số đi theo là
+          mắt phải đuổi. Đây cũng đúng cách platform bày (nhãn trái, số phải). */}
+      <s-stack direction="inline" gap="small-200" alignItems="center" justifyContent="space-between">
+        <s-text color="subdued">
+          <label htmlFor={id}>{label}</label>
+        </s-text>
+        <s-text type="strong">{displayValue}</s-text>
+      </s-stack>
+      <input
+        id={id}
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(Number(event.currentTarget.value))}
+        style={{width: '100%', accentColor: '#303030', cursor: disabled ? 'not-allowed' : 'pointer'}}
+      />
+    </s-stack>
+  );
+}
+
+/**
+ * Ô giữ chỗ cho media chưa có asset thật.
+ *
+ * VÌ SAO CẦN (bắt được 07 Aug 2026 khi review lưới template trong browser):
+ * `mockup-app/CLAUDE.md` §9 cho phép thumbnail video trong LIST vì ở đó nó nằm cạnh
+ * tiêu đề nên đọc ra là "khung hình của video này". Nhưng thẻ template trong Content
+ * Library **chỉ có mỗi ảnh, không có chữ nào** — nên một ảnh picsum chụp tường gạch
+ * đọc thẳng ra là "template về tường gạch". Với thẻ actor còn tệ hơn: ảnh phong cảnh
+ * dán nhãn "Julian · HD" là nói dối về thứ đang xem.
+ *
+ * → Ô xám có nhãn nói thật hơn: nó truyền tải HÌNH DẠNG và MẬT ĐỘ lưới (thứ cần review)
+ * mà không giả vờ là nội dung. Thay bằng asset thật khi có.
+ *
+ * CSS thuần vì `s-box` không có `aspectRatio`, và tỉ lệ 9:16 là thứ phải đúng — lưới
+ * ảnh dọc khác hẳn lưới ảnh vuông về số cột và chiều cao cuộn.
+ */
+export function MediaPlaceholder({
+  aspectRatio,
+  label,
+  sublabel,
+}: {
+  /** '9/16' cho video dọc, '3/4' cho chân dung actor */
+  aspectRatio: string;
+  label: string;
+  sublabel?: string;
+}) {
+  return (
+    <div
+      style={{
+        aspectRatio,
+        background: '#f1f1f1',
+        borderRadius: 8,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        padding: 8,
+        textAlign: 'center',
+      }}
+    >
+      <s-text color="subdued">{label}</s-text>
+      {sublabel && <s-text color="subdued">{sublabel}</s-text>}
+    </div>
+  );
+}
+
+/**
+ * Pill lọc — hàng chip taxonomy của Content Library và các hàng lọc khác.
+ *
+ * VÌ SAO TỰ DỰNG thay vì dùng `s-clickable-chip` (Stella chốt 07 Aug 2026, kèm ảnh mẫu
+ * từ platform). Đo `s-clickable-chip` thật trong browser:
+ *   radius 8px · nền rgba(0,0,0,.06) · chữ 12px · padding 2px 8px · KHÔNG viền
+ *   chọn = `color="strong"` → nền rgb(227,227,227)
+ *
+ * Hai vấn đề, một là thẩm mỹ và một là THẬT:
+ *  • 🔴 **Trạng thái chọn gần như không đọc được.** rgb(227,227,227) so với rgba(0,0,0,.06)
+ *    là chênh lệch cực nhỏ — trên một hàng 35 chip, merchant không thấy mình đang lọc theo
+ *    cái gì. Đây là lỗi chức năng, không phải chuyện đẹp xấu.
+ *  • Radius 8px + chữ 12px không ra dáng pill, và 12px là nhỏ cho một hàng lọc dài.
+ *
+ * `s-clickable-chip` chỉ có `color: subdued|base|strong` — không có prop nào cho radius,
+ * viền hay cỡ chữ, và style của nó nằm trong shadow DOM nên CSS ngoài không với tới.
+ *
+ * ⚠️ NGOẠI LỆ CSS — cùng hạng với `PLAN_CARD_CSS` của trang Billing (`CLAUDE.md` §5 mục 4,
+ * Stella chốt 06 Aug 2026): khi Polaris không có đường làm được thứ đã chốt thì tự dựng,
+ * nhưng **giữ toàn bộ trong dải xám/đen** — `#303030` là ink Polaris (đúng giá trị
+ * `ProgressBar` dùng), không có màu brand MakeUGC nào → KHÔNG phá §6.
+ *
+ * Đánh đổi phải biết: pill này **không tự nhận cập nhật** khi Shopify đổi style chip.
+ * Ngày `s-clickable-chip` có prop `variant="outline"` thì xoá component này và khối CSS.
+ */
+const FILTER_PILL_CSS = `
+.mk-pill{
+  border-radius:999px;
+  border:1px solid #c9c9c9;
+  background:#fff;
+  color:#303030;
+  font-size:13px;
+  line-height:1;
+  padding:7px 14px;
+  cursor:pointer;
+  transition:border-color .1s ease, background .1s ease;
+}
+.mk-pill:hover{ border-color:#8a8a8a; }
+.mk-pill:focus-visible{ outline:2px solid #303030; outline-offset:2px; }
+.mk-pill[aria-pressed="true"]{
+  background:#303030;
+  border-color:#303030;
+  color:#fff;
+}
+.mk-pill[aria-pressed="true"]:hover{ background:#1a1a1a; }
+`;
+
+/**
+ * Hàng pill tự xuống dòng.
+ *
+ * `s-stack` không có `wrap` và `s-grid` ép mọi ô bằng nhau ("All" sẽ rộng bằng
+ * "Beauty & Personal Care") → flex-wrap là cách duy nhất (`CLAUDE.md` §5 mục 7).
+ *
+ * Trạng thái chọn dùng `aria-pressed` chứ không phải class riêng: nó vừa lái CSS vừa là
+ * thứ screen reader đọc được, nên không cần nhét thêm text ẩn như `TabBar` phải làm.
+ */
+export function FilterPills<T extends string>({
+  options,
+  active,
+  onPick,
+  ariaLabel,
+}: {
+  options: readonly T[];
+  /** Giá trị đang chọn; `null` = không chọn cái nào */
+  active: T | null;
+  onPick: (value: T) => void;
+  ariaLabel: string;
+}) {
+  return (
+    <>
+      <style>{FILTER_PILL_CSS}</style>
+      <div
+        role="group"
+        aria-label={ariaLabel}
+        style={{display: 'flex', flexWrap: 'wrap', gap: 8}}
+      >
+        {options.map((option) => (
+          <button
+            key={option}
+            type="button"
+            className="mk-pill"
+            aria-pressed={option === active}
+            onClick={() => onPick(option)}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+/**
+ * Player xem trước video — điều khiển ĐÈ LÊN khung hình, đúng như platform.
+ *
+ * ═══ VÌ SAO ĐỔI TỪ "THANH DƯỚI ẢNH" SANG OVERLAY (Stella chốt 07 Aug 2026, kèm ảnh) ═══
+ * Bản đầu tôi để điều khiển nằm dưới ảnh vì `s-text`/`s-icon` chỉ có `color: subdued|base`
+ * — không viết được chữ trắng trên nền tối, mà overlay thì bắt buộc phải trắng. Lập luận
+ * đó đúng về mặt kỹ thuật nhưng ra sai sản phẩm: thanh rời bên dưới đọc như một widget
+ * audio, không đọc như video player. Merchant đã quen player của YouTube/TikTok.
+ *
+ * ⚠️ NGOẠI LỆ CSS + INLINE SVG. Khác các ngoại lệ trước ở chỗ nó cũng phá luôn rule
+ * "không inline `<svg>` — dùng `s-icon`" (§5). Lý do rule đó tồn tại là để không ai vẽ lại
+ * icon admin bằng tay khi Polaris đã có; ở đây `s-icon` **không dùng được** vì không đổi
+ * được sang màu trắng.
+ *
+ * Khung biện minh: **player là media chrome, không phải admin chrome** — cùng hạng với
+ * ngoại lệ "storefront preview" (§5 mục 4), được phép trông không-Polaris vì nó đại diện
+ * cho một thứ không-Polaris. Khung bao quanh nó vẫn là Polaris thuần.
+ *
+ * Toàn bộ màu là trắng/đen/trong suốt — không có màu brand nào, không phá §6.
+ *
+ * ═══ KHÁC PLATFORM MỘT CHỖ, CỐ Ý ═══
+ * Platform có thêm nút `⋮` (kebab). BỎ: menu đó của platform chứa download/report — trong
+ * app Shopify template không có hành động nào như vậy, và modal đã có sẵn Close +
+ * "Use this template". Thêm một nút không làm gì là bịa UI.
+ *
+ * Mặc định `playing = true` vì video TỰ CHẠY khi mở modal. Chỗ gọi phải truyền `key={id}`
+ * để đổi video là đồng hồ về 0.
+ */
+const VIDEO_PLAYER_CSS = `
+.mk-vp{ position:relative; border-radius:8px; overflow:hidden; line-height:0; }
+.mk-vp-bar{
+  position:absolute; inset-inline:0; bottom:0;
+  /* padding-bottom 10px: thanh tiến trình KHÔNG sát mép đáy (Stella 07 Aug 2026) —
+     sát mép thì nó dính vào viền bo của khung và đọc như bị cắt */
+  padding:28px 10px 10px;
+  background:linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.38) 55%, rgba(0,0,0,0) 100%);
+  line-height:1;
+}
+.mk-vp-row{ display:flex; align-items:center; gap:10px; padding-bottom:8px; }
+.mk-vp-btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:28px; height:28px; padding:0;
+  border:0; border-radius:999px; background:transparent;
+  color:#fff; cursor:pointer;
+}
+.mk-vp-btn:hover{ background:rgba(255,255,255,.18); }
+.mk-vp-btn:focus-visible{ outline:2px solid #fff; outline-offset:1px; }
+.mk-vp-time{ color:#fff; font-size:12px; font-variant-numeric:tabular-nums; }
+.mk-vp-spacer{ flex:1; }
+/* Bo tròn vì track giờ nằm lọt trong khung chứ không còn chạy hết mép — cạnh vuông
+   ở giữa nền ảnh đọc ra như một vệt lỗi */
+.mk-vp-track{ height:3px; border-radius:999px; background:rgba(255,255,255,.35); overflow:hidden; }
+.mk-vp-fill{ height:100%; border-radius:999px; background:#fff; }
+`;
+
+/** Icon của player — inline SVG vì `s-icon` không đổi được sang màu trắng */
+function PlayerIcon({name}: {name: 'play' | 'pause' | 'volume' | 'muted' | 'expand'}) {
+  const common = {width: 16, height: 16, viewBox: '0 0 24 24', 'aria-hidden': true} as const;
+  if (name === 'pause') {
+    return (
+      <svg {...common} fill="currentColor">
+        <rect x="7" y="5" width="3.5" height="14" rx="1" />
+        <rect x="13.5" y="5" width="3.5" height="14" rx="1" />
+      </svg>
+    );
+  }
+  if (name === 'play') {
+    return (
+      <svg {...common} fill="currentColor">
+        <path d="M8 5.5v13a1 1 0 0 0 1.5.87l10.5-6.5a1 1 0 0 0 0-1.74L9.5 4.63A1 1 0 0 0 8 5.5Z" />
+      </svg>
+    );
+  }
+  if (name === 'expand') {
+    return (
+      <svg {...common} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+      </svg>
+    );
+  }
+  // volume / muted dùng chung thân loa
+  return (
+    <svg {...common} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+      <path d="M4 9.5h3.5L12 6v12L7.5 14.5H4z" fill="currentColor" />
+      {name === 'volume' ? (
+        <path d="M15.5 9a4 4 0 0 1 0 6" strokeLinecap="round" />
+      ) : (
+        <path d="M16 9.5l4 5M20 9.5l-4 5" strokeLinecap="round" />
+      )}
+    </svg>
+  );
+}
+
+export function VideoPreview({
+  src,
+  alt,
+  durationSec,
+}: {
+  src: string;
+  alt: string;
+  durationSec: number;
+}) {
+  const [playing, setPlaying] = useState(true);
+  const [muted, setMuted] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!playing) return;
+    // 250ms cho nhẹ — 100ms thì re-render 10 lần/giây mà mắt không phân biệt được
+    const id = window.setInterval(() => {
+      setElapsed((current) => (current + 0.25) % durationSec);
+    }, 250);
+    return () => window.clearInterval(id);
+  }, [playing, durationSec]);
+
+  const clock = (seconds: number) => `0:${String(Math.floor(seconds)).padStart(2, '0')}`;
+  const percent = (elapsed / durationSec) * 100;
+
+  return (
+    <>
+      <style>{VIDEO_PLAYER_CSS}</style>
+      <div className="mk-vp">
+        <s-image src={src} alt={alt} aspectRatio="9/16" objectFit="cover" />
+        <div className="mk-vp-bar">
+          <div className="mk-vp-row">
+            <button
+              type="button"
+              className="mk-vp-btn"
+              aria-label={playing ? 'Pause preview' : 'Play preview'}
+              onClick={() => setPlaying((current) => !current)}
+            >
+              <PlayerIcon name={playing ? 'pause' : 'play'} />
+            </button>
+            <span className="mk-vp-time">
+              {clock(elapsed)} / {clock(durationSec)}
+            </span>
+            <span className="mk-vp-spacer" />
+            <button
+              type="button"
+              className="mk-vp-btn"
+              aria-label={muted ? 'Unmute preview' : 'Mute preview'}
+              onClick={() => setMuted((current) => !current)}
+            >
+              <PlayerIcon name={muted ? 'muted' : 'volume'} />
+            </button>
+            {/* Fullscreen vẽ để khớp platform nhưng CHƯA nối — trong mockup không có
+                video thật để phóng to. Vẫn có nhãn để screen reader không đọc nút trống. */}
+            <button type="button" className="mk-vp-btn" aria-label="Full screen (not wired in mockup)">
+              <PlayerIcon name="expand" />
+            </button>
+          </div>
+          {/* Thanh tiến trình sát mép đáy, đúng platform. `role="progressbar"` + nhãn vì
+              nó là thông tin, không phải vạch trang trí. */}
+          <div
+            className="mk-vp-track"
+            role="progressbar"
+            aria-valuenow={Math.round(percent)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`${clock(elapsed)} of ${clock(durationSec)}`}
+          >
+            <div className="mk-vp-fill" style={{width: `${percent}%`}} />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Vòng tròn đếm ngược — Stella yêu cầu 08 Aug 2026 cho banner "Thank you" tự tắt.
+ *
+ * 🔴 Polaris web components KHÔNG có circular progress (đã soát cả 59 component). Vòng
+ * tròn phải vẽ bằng SVG: `stroke-dasharray` = chu vi, rồi rút `stroke-dashoffset` dần.
+ * Cùng hạng ngoại lệ inline-SVG với `PlayerIcon` — `s-icon` không vẽ được tiến trình.
+ *
+ * Vì sao đếm bằng state chứ không bằng CSS animation: con số bên cạnh và vòng tròn phải
+ * khớp nhau. Chạy animation cho vòng tròn rồi đếm số riêng là hai đồng hồ, và chúng sẽ
+ * lệch. Một nguồn thời gian duy nhất thì không lệch được.
+ *
+ * `onDone` gọi ĐÚNG MỘT LẦN — có cờ chặn, vì interval có thể chạy thêm một nhịp trước khi
+ * cleanup kịp và chỗ gọi thường dùng nó để đổi state.
+ */
+export function CountdownRing({
+  seconds,
+  onDone,
+  size = 20,
+}: {
+  seconds: number;
+  onDone?: () => void;
+  size?: number;
+}) {
+  const [left, setLeft] = useState(seconds);
+
+  useEffect(() => {
+    const startedAt = performance.now();
+    let fired = false;
+    const id = window.setInterval(() => {
+      const remaining = Math.max(0, seconds - (performance.now() - startedAt) / 1000);
+      setLeft(remaining);
+      if (remaining <= 0 && !fired) {
+        fired = true;
+        window.clearInterval(id);
+        onDone?.();
+      }
+    }, 80);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seconds]);
+
+  const radius = size / 2 - 2;
+  const circumference = 2 * Math.PI * radius;
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      role="timer"
+      aria-label={`Closing in ${Math.ceil(left)} ${Math.ceil(left) === 1 ? 'second' : 'seconds'}`}
+    >
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke="#c9c9c9"
+        strokeWidth="2"
+      />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke="#303030"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={circumference * (1 - left / seconds)}
+        // Bắt đầu từ 12 giờ và chạy theo chiều kim đồng hồ
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+    </svg>
   );
 }
