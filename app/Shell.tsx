@@ -1,8 +1,9 @@
 import {createContext, useEffect, useState} from 'react';
-import {Routes, Route, useNavigate, useLocation} from 'react-router-dom';
+import {matchPath, Routes, Route, useNavigate, useLocation} from 'react-router-dom';
 
 import AdminChrome from './components/AdminChrome';
 import GlobalJobProgress from './components/GlobalJobProgress';
+import {HarnessPrdContext} from './components/StateSwitcher';
 import {HARNESS_ONLY_NAV, MOCKUPS, NAV_ITEMS} from './registry';
 import MockupIndex from './routes/_index';
 
@@ -77,6 +78,20 @@ export default function Shell() {
   // hai cái cùng lúc là nói một chuyện hai lần.
   const showGlobalJob = simulateJob && location.pathname !== '/app';
 
+  /**
+   * Mockup nào đang mở — để cấp link PRD xuống `StateSwitcher` của trang đó.
+   *
+   * Dùng `matchPath` chứ không so chuỗi: `/app/library/v-1` phải khớp `alsoMatch` của
+   * Library detail, không thì mở trang qua link động là mất link PRD.
+   */
+  const currentMockup = MOCKUPS.find(
+    (mockup) =>
+      matchPath(mockup.path, location.pathname) !== null ||
+      (mockup.alsoMatch ?? []).some(
+        (pattern) => matchPath(pattern, location.pathname) !== null,
+      ),
+  );
+
   return (
     <HarnessJobContext.Provider value={simulateJob}>
     <AdminChrome
@@ -110,6 +125,7 @@ export default function Shell() {
         </s-box>
       )}
 
+      <HarnessPrdContext.Provider value={currentMockup?.prdUrl ?? null}>
       <Routes>
         <Route path="/" element={<MockupIndex />} />
         {MOCKUPS.map(({path, Component}) => (
@@ -124,6 +140,7 @@ export default function Shell() {
         )}
         <Route path="*" element={<MockupIndex />} />
       </Routes>
+      </HarnessPrdContext.Provider>
     </AdminChrome>
     </HarnessJobContext.Provider>
   );

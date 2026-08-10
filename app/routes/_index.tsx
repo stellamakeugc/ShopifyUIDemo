@@ -76,6 +76,17 @@ export default function MockupIndex() {
                 <s-text color="subdued">{mockup.routeFile}</s-text>
               </s-box>
 
+              {/* Link ra ngoài + target="_blank" → handler client-side của Shell.tsx cố ý
+                  bỏ qua, nên browser tự mở tab mới và state đang review không bị reset. */}
+              {mockup.prdUrl && (
+                <s-stack direction="inline" gap="small-300" alignItems="center">
+                  <s-icon type="note" tone="neutral" size="small" />
+                  <s-link href={mockup.prdUrl} target="_blank">
+                    PRD — danh sách tính năng trên Notion
+                  </s-link>
+                </s-stack>
+              )}
+
               {mockup.open && mockup.open.length > 0 && (
                 <>
                   <s-divider />

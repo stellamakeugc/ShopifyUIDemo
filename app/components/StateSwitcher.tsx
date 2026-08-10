@@ -1,5 +1,17 @@
-import {Fragment, useState} from 'react';
+import {createContext, Fragment, useContext, useState} from 'react';
 import type {ReactNode} from 'react';
+
+/**
+ * REVIEW TOOL — link PRD của trang đang mở, do `Shell.tsx` cấp theo URL.
+ *
+ * Vì sao qua context chứ không phải prop: 13 route đều gọi `StateSwitcher` và không
+ * route nào biết mình là entry nào trong registry. Shell thì biết (nó có
+ * `location.pathname`) → nó tra registry một lần, mọi trang tự có link.
+ *
+ * Context nằm ở ĐÂY chứ không ở `Shell.tsx` để tránh vòng import: StateSwitcher không
+ * import gì từ Shell, còn Shell vốn đã import components.
+ */
+export const HarnessPrdContext = createContext<string | null>(null);
 
 /**
  * REVIEW TOOL — không phải phần của app thật. Dev xoá khi copy route đi.
@@ -37,6 +49,7 @@ export default function StateSwitcher({
   globalNote?: ReactNode;
 }) {
   const [docOpen, setDocOpen] = useState(false);
+  const prdUrl = useContext(HarnessPrdContext);
   const current = states.find((option) => option.value === state);
   const hasDoc = Boolean(current?.doc?.length || globalNote);
 
@@ -59,6 +72,20 @@ export default function StateSwitcher({
           </s-select>
           <s-text color="subdued">Không có trong app thật — xoá khi copy vào app.</s-text>
         </s-stack>
+
+        {/* Link PRD ở ĐÂY, không chỉ ở index page: dev mở thẳng trang để review thì
+            không đi qua index, và câu hỏi ngay sau "trang này trông thế nào" luôn là
+            "trang này có những tính năng gì".
+            `target="_blank"` → handler client-side của Shell cố ý bỏ qua, nên bấm vào
+            không reset state đang review. */}
+        {prdUrl && (
+          <s-stack direction="inline" gap="small-300" alignItems="center">
+            <s-icon type="note" tone="neutral" size="small" />
+            <s-link href={prdUrl} target="_blank">
+              PRD — danh sách tính năng của trang này
+            </s-link>
+          </s-stack>
+        )}
 
         {hasDoc && (
           <s-stack direction="block" gap="small-200" alignItems="start">

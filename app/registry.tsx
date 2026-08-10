@@ -35,6 +35,16 @@ export interface Mockup {
   Component: ComponentType;
   routeFile: string;
   description: string;
+  /**
+   * Link PRD trên Notion — hiện thành link ngay trên thẻ ở index page.
+   *
+   * Vì sao để trên thẻ chứ không gom thành một trang danh sách riêng: dev mở review
+   * tool để XEM trang, và câu hỏi ngay sau đó luôn là "trang này có những tính năng
+   * gì". Hai thứ đó phải nằm cạnh nhau.
+   *
+   * Chưa viết PRD thì bỏ trống — thẻ tự không hiện link, không phải nút chết.
+   */
+  prdUrl?: string;
   open?: string[];
 }
 
@@ -48,6 +58,7 @@ export const MOCKUPS: Mockup[] = [
     routeFile: 'app/routes/app._index.tsx',
     description:
       'Vẽ lại 05 Aug 2026 theo app THẬT. Setup guide 4 bước theo free path (import → tag → widget → theme), collapse/expand từng bước, bước theme có "Refresh status", xong 4/4 thì thành "Setup complete" một lần rồi mới ẩn. Performance nằm dưới setup guide, hiện ở mọi state nhưng KHÔNG bao giờ hiện số 0. Credit nói đúng một lần và có button. 14 state.',
+    prdUrl: 'https://app.notion.com/p/3b8902b339da819e9ddeda67f612a558',
     open: [
       '⏳ Job status: đã vẽ bản TOÀN CỤC (`components/GlobalJobProgress.tsx`) — banner gọn sống ở mọi trang, Home vẫn giữ card chi tiết. Cần Duong chốt kiến trúc: job state là global (một store + poll ở layout route `app/routes/app.tsx`) hay per-page? Ảnh hưởng cả cách lưu job và cách thông báo khi xong. Trong harness nó nằm ở `Shell.tsx` + có công tắc giả lập — app thật thì KHÔNG như vậy.',
       '🛑 App thật có 6 widget format, mockup chỉ biết tên 3 (carousel / stories bar / floating player). Cần Duong cấp tên 3 format còn lại — Home đang nói "See all 6 formats" và trang Widgets phải vẽ lại theo đủ 6.',
@@ -71,6 +82,7 @@ export const MOCKUPS: Mockup[] = [
     routeFile: 'app/routes/app.onboarding.tsx',
     description:
       '⚠️ STALE — IA app thật KHÔNG có trang Onboarding riêng, setup guide sống trên Home. Giữ lại vì phần async import job / theme-unsupported / manual install còn dùng được khi vẽ lại Library.',
+    prdUrl: 'https://app.notion.com/p/3b8902b339da8156a175dd37485f2afc',
     open: [
       '⚠️ Route này dùng `onboardingSteps` (3 bước, stale). Home dùng `setupSteps` (4 bước). Xoá route này thì xoá luôn `onboardingSteps` trong sample.ts.',
       'Deep link theme editor cần EXTENSION_UUID + handle của app block thật — Duong điền khi có extension.',
@@ -90,6 +102,7 @@ export const MOCKUPS: Mockup[] = [
     routeFile: 'app/routes/app.library._index.tsx',
     description:
       'Vẽ lại 06 Aug 2026 theo app THẬT. Grid-first + toggle sang table. Filter tách thành BA trục (trạng thái · nguồn · vấn đề) thay cho 9 chip single-select trộn 4 trục. Thẻ mang badge trạng thái + placement + cảnh báo chưa tag + doanh thu. Bulk "Add to widget" (placement là gán tay). Nhận job từ AI Studio bằng MỘT banner. 11 state, a11y 100/100.',
+    prdUrl: 'https://app.notion.com/p/3b8902b339da81f4884ac70f7ce02355',
     open: [
       '🛑 Mockup vẽ 1 video : NHIỀU product, app đang **1:1** (modal "Link to product" ghi rõ). Stella chốt 06 Aug 2026 vẽ 1:n vì ràng buộc 1:1 là tạm thời — dev copy route phải biết backend chưa đỡ được. Cần biết: 1:n dự kiến khi nào, và UI chọn nhiều product trông thế nào?',
       '🛑 Vốn từ chốt là "Tag products"; app đang ghi "Link to product" và sẽ đổi theo mockup — có chi phí dev.',
@@ -113,6 +126,7 @@ export const MOCKUPS: Mockup[] = [
     routeFile: 'app/routes/app.library.$id.tsx',
     description:
       'Tag product theo mốc thời gian trong video, CTA label, placement, performance sidebar.',
+    prdUrl: 'https://app.notion.com/p/3b8902b339da81f88d3ed2c912a84d28',
     open: ['Resource picker là App Bridge API — mockup chỉ ghi comment, không chạy được.'],
   },
   {
@@ -125,6 +139,7 @@ export const MOCKUPS: Mockup[] = [
     routeFile: 'app/routes/app.widgets._index.tsx',
     description:
       'Vẽ lại 06 Aug 2026 theo app THẬT. Thêm grid quản lý tổng mà app đang thiếu hoàn toàn (index app chỉ có empty state). Mỗi thẻ nói ĐÚNG MỘT trạng thái theo thứ tự thiệt hại: ngoài plan › 0 video › chưa set up › chưa sync › Ready, kèm lý do bằng text hiện sẵn và action đúng việc đang thiếu. 6 template đổi tên (bỏ "PDP", bỏ tên đối thủ). Gate theo plan hai trục: template cao cấp + trần số widget. Tạo widget gộp về MỘT modal hai bước. 14 state.',
+    prdUrl: 'https://app.notion.com/p/3b8902b339da8128887fd6f1bc45c41a',
     open: [
       '🛑 `Add to theme` có deep-link + preset block/widget ID không, hay merchant vẫn phải dán tay chuỗi cuid 25 ký tự như tab Setup đang bắt làm? Setup tab đang có CẢ HAI — một trong hai thừa hoặc đang nói dối. Đây là chỗ activation (install → first video live dưới 10 phút) chết.',
       '✅ CHỐT 06 Aug 2026 (Stella, không chờ Duong): **storefront cập nhật TỰ ĐỘNG khi save** — app ghi metafield ngay trong request đó. Ghi metafield là mutation Admin API gần như tức thì, sync thủ công là nợ kỹ thuật chứ không phải ràng buộc Shopify. Dev cần: debounce về đúng lúc Save (tránh rate limit) + đẩy sang background job nếu sợ save fail. Đã gỡ khỏi mockup: `hasUnsyncedChanges`, `lastSyncedAt`, badge `Changes not live`, state `unsynced`/`syncing`, bước 3 của Setup. Giữ lại nút `Refresh storefront data` như CÔNG CỤ SỬA LỖI ở cuối Setup, không đánh số, không phải bước bắt buộc.',
@@ -149,6 +164,7 @@ export const MOCKUPS: Mockup[] = [
     routeFile: 'app/routes/app.widgets.$id.tsx',
     description:
       'Vẽ lại 06 Aug 2026 theo app THẬT. Đảo tab thành Videos → Design → Setup (thứ tự chính app dạy ở trang Widgets rồi lại xếp ngược). Preview LUÔN vẽ được kể cả khi playlist rỗng — app nói "Add videos to preview" ở cả 4 sub-tab nên 30 field không kiểm chứng được. Bỏ sub-nav dọc → 4 section xếp dọc. Playlist đổi được thứ tự, cảnh báo video chưa tag product, gỡ video có confirm nói rõ không xoá khỏi Library. Setup phân nhánh theo 3 cơ chế storefront. 13 state.',
+    prdUrl: 'https://app.notion.com/p/3b8902b339da818da440c52dc6e3d4a1',
     open: [
       '🛑 `Full-screen feed` là app proxy, app embed hay theme block? Screenshot xác nhận `Floating bubble` = **app embed** ("App embed (site-wide)"); `Full-screen feed` mô tả "dedicated proxy page" nghe như cơ chế THỨ BA. Mockup đang đoán `app-proxy` — sai thì hướng dẫn Setup của template đó sai.',
       '🛑 **Field Design phải khác nhau theo format** (Stella chốt 06 Aug 2026) — bấm Edit ở widget nào thì tab Design chỉ hiện field format đó CÓ. Bảng scope ở `sample.ts` → `widgetTemplates[].design` là SUY LUẬN từ mô tả template của app; mới có screenshot tab Design của PDP Stories, cần Duong đối chiếu 5 template còn lại. Đo được: 33 field (stories/carousel) · 30 (stacked) · 16 (spotlight) · 13 (bubble) · 11 (feed). KHÔNG thêm field mới, chỉ giới hạn field đã có.',
@@ -170,6 +186,7 @@ export const MOCKUPS: Mockup[] = [
     routeFile: 'app/routes/app.ai-studio._index.tsx',
     description:
       'Tab **Creator video** (đổi tên 07 Aug 2026 từ "From a template"). Port từ SCREENSHOT platform "Content Library". Filter là MỘT dải chip phẳng ~35 tag trộn ngành + format + style (Accessories cạnh Avatar Swap cạnh Cinematic cạnh Hook cạnh Viral) — không phải 3 dropdown như bản đoán đầu. Card chỉ có video dọc, không chữ; tên + mô tả nằm trong modal Details. Cố ý KHÔNG có aside (credit thuộc chỗ tiêu tiền, không thuộc chỗ duyệt hàng — và bỏ nó trả lại 966px cho lưới, 5 cột thay vì 3). Giá một video 150 credits. Modal tên là **Details** (không phải "Ad details" như platform — app này sống trong Shopify admin, video đi thẳng lên storefront chứ không phải nền tảng chạy ad), có khối VIDEO tự chạy kèm pause + đồng hồ, và chỉ có tên + mô tả đúng như platform (đã bỏ hàng tag / khối "Creator in this template" / dòng thời lượng — tên creator vẫn nằm dưới mỗi thẻ ở lưới và ở section Creator and voice của compose). 7 state.',
+    prdUrl: 'https://app.notion.com/p/3b8902b339da81bfab4ef10837a57f8a',
     open: [
       'Giá một video CHỐT là 150 credits (Stella 08 Aug 2026) → plan Scale 2.500 ra ≈16 video/tháng. Còn thiếu allowance của Starter và Growth — số đó chặn pricing doc trên Notion.',
       '🛑 Thư viện thật có bao nhiêu template? Mockup có 24 mẫu và hiện tổng 240 — cả hai đều là tôi đặt.',
@@ -190,6 +207,7 @@ export const MOCKUPS: Mockup[] = [
     routeFile: 'app/routes/app.ai-studio.$id.tsx',
     description:
       'Tab **Creator video** → compose. GỘP Content Library Recreate + composer Talking Actors của platform làm một luồng. Bốn section: template (thumb trái, chữ phải) · Product (modal có search vì store có thể có hàng nghìn sản phẩm; description có nút AI "Summarise from product details") · Dialog (MỘT card, AI script writer là CHẾ ĐỘ bên trong đúng luồng platform, không phải ô nhập thứ hai; Add speech emotion chèn thẻ [excited] tại vị trí con trỏ) · Creator (**Optional**, mặc định TRỐNG — creator của template không nằm trong kho avatar, không đụng vào thì video giữ nguyên người có sẵn). ĐÃ BỎ section Quality/Mode (mặc định Nova 2.0, 150 credits/video) và ĐÃ BỎ state Free Forever — gói đó không có trong tập plan. Có gate disclaimer ba bước: banner CHẶN generate (nút Generate bị ẨN, không phải disable) → tick + Continue → banner "Thank you" tự tắt sau 3s có `CountdownRing` → Generate hiện ra. 12 state.',
+    prdUrl: 'https://app.notion.com/p/3b8902b339da81f8ac42f5ba49bb7833',
     open: [
       '🛑 Copy disclaimer "MakeUGC is not responsible for false claims" là NHÁP, chưa qua legal. Nó chuyển được nghĩa vụ deployer (EU AI Act 50(4), NY 396-b) sang merchant nhưng KHÔNG chuyển được nghĩa vụ provider (Art 50(2) — dấu machine-readable) và KHÔNG chuyển được FTC 16 CFR 465, vì điều khoản đó phạt cả bên PHÁT TÁN — app này chính là bên đẩy video lên storefront. Thứ thật sự giảm rủi ro và CHƯA build: provenance marking trên output + badge "AI-generated" mặc định bật trên storefront widget.',
       '⏸️ Chọn model đã PARK khỏi UI (Stella 07 Aug 2026) — mặc định Nova 2.0, một giá 150 credits. Bảng `aiModels` giữ trong sample.ts nhưng không route nào import; cần Duong cấp danh sách thật trước khi bật lại.',
@@ -214,6 +232,7 @@ export const MOCKUPS: Mockup[] = [
     routeFile: 'app/routes/app.ai-studio.product.tsx',
     description:
       'Tab **Product video** (đổi tên + đổi path 08 Aug 2026: `/app/ai-studio/product`). Vẽ lại 05 Aug 2026 theo app THẬT — mô hình catalog image → video, 1 ảnh = 1 credit = 1 video. Hai section: Products & images (bước 1) + Prompt (cấp batch, ghi đè lẻ từng ảnh qua modal). Cost preview + lý do Generate bị disable + banner cannot-afford/batch-lớn nằm ở aside dưới CreditMeter. Confirm có số lượng khi batch ≥25. Có gate disclaimer ba bước giống tab Creator video (một lần cho mỗi shop nên phải chặn ở CẢ HAI tab sinh video). 17 state, a11y 100/100.',
+    prdUrl: 'https://app.notion.com/p/3b8902b339da81bb9227dc99a0dd33c7',
     open: [
       '🛑 Listing đã submit claim "1000+ avatars in 50+ languages" (app-listing-v1-submission.md dòng 39) mà AI Studio KHÔNG có avatar/language picker. Chính file listing ghi Shopify reject nếu claim không verify được → phải chốt: sửa listing, hay ship avatar/language trước review. Section "Creator & language" trong mockup là slot cho nó.',
       '🛑 Credit allowance thật của Starter / Growth? Chỉ Scale = 2.500/mo là verify được từ app (mockup cũ ghi 200, lệch 12,5×). Mọi state quota phụ thuộc tỉ lệ allowance / cỡ batch.',
@@ -235,6 +254,7 @@ export const MOCKUPS: Mockup[] = [
     routeFile: 'app/routes/app.ai-studio.avatars.tsx',
     description:
       '⛔ HIỆN KHÔNG CÓ ĐƯỜNG VÀO. Stella bỏ tab `Avatars` 07 Aug 2026 — trang chỉ để ngắm, không hành động nào, là ngõ cụt trong admin hướng-tác-vụ. Kho actor giờ sống trong modal `Add actors` của trang compose (đã bù luôn bộ lọc style sang đó). Giữ file để review và phòng khi chốt cần một trang duyệt riêng. Nội dung: kho MakeUGC 24 actor, filter gender + age 5 bậc + skin tone có nhãn chữ + ~30 chip style. 6 state.',
+    prdUrl: 'https://app.notion.com/p/3b8902b339da81efb91cc04bd06946d9',
     open: [
       '🛑 Merchant xem kho actor TRƯỚC khi chọn template bằng đường nào? Bỏ tab Avatars thì kho chỉ còn trong modal của trang compose, mà muốn vào đó phải chọn template trước. Câu "các anh có creator nào giống tệp khách của tôi không?" — hỏi TRƯỚC khi quyết định nâng gói — chưa có chỗ trả lời. Reviewer Shopify đi verify claim "1000+ avatars" cũng vậy. Cách vá rẻ nhất: secondary action "Browse creators" trên trang gallery, mở đúng modal đó. CHƯA làm, chờ Stella chốt.',
       '⏸️ ĐÃ BỎ custom actor khỏi V1 (Stella chốt 07 Aug 2026). Hệ quả TỐT: phơi nhiễm Illinois BIPA về gần 0 — không còn `scan of face geometry` nào do merchant upload, mà đó là hạng mục duy nhất trong cả nghiên cứu CÓ quyền khởi kiện tư nhân. Tickbox consent biến mất theo → không còn gì phải chờ legal review trước launch. Field `source`/`status`/`consent` vẫn giữ trong type để bật lại là thêm data, không phải migrate schema.',
@@ -253,6 +273,7 @@ export const MOCKUPS: Mockup[] = [
     routeFile: 'app/routes/app.analytics.tsx',
     description:
       'Vẽ lại 06 Aug 2026 theo app THẬT. Analytics thật ĐO SỰ KIỆN (item clicks · product visits · add to cart · buy now · action rate · cart conversion), không đo tiền — bản mockup cũ dựng cả trang quanh "attributed revenue" là sai mô hình. Hai tab: By video (bảng sort/filter/paginate — khoảng trống lớn nhất của app, nó chỉ có một bar chart "Top media") và Trends (KPI chia 2 nhóm · phễu · daily events · recent activity). Nhóm Sales cố ý ĐI TRƯỚC app. Mọi số derive từ một nguồn: tổng cột bảng = KPI = bước phễu = tổng series chart = KPI của Home. 12 state.',
+    prdUrl: 'https://app.notion.com/p/3b8902b339da81b89b5ed85a5d6017c4',
     open: [
       '🛑 Listing đã nộp claim "Track orders and revenue attributed to each video in your dashboard" (app-listing-v1-submission.md dòng 38) mà trang Analytics thật KHÔNG có orders/revenue/dấu $ nào (screenshot 06 Aug). Reviewer sẽ bấm đúng trang này để kiểm chứng → nhóm Sales phải xong TRƯỚC lượt review, không phải trước launch. Cùng hạng với claim "1000+ avatars" của AI Studio.',
       '🛑 "Action rate" và "Cart conversion" app KHÔNG định nghĩa ở đâu cả — mà đó là 2 tỉ lệ merchant mang đi họp. Mockup ĐỀ XUẤT: action rate = item clicks ÷ widget loads · cart conversion = orders ÷ add to cart. Cần Duong xác nhận trước khi build.',
@@ -277,6 +298,7 @@ export const MOCKUPS: Mockup[] = [
     routeFile: 'app/routes/app.billing.tsx',
     description:
       'Vẽ lại 06 Aug 2026. **Nội dung pricing lấy từ Notion → Tactic 2 · Pricing proposal** (Stella chỉ đạo), sửa 5 chỗ mockup cũ bán thiếu — Growth 50 → **500 credit**, Triple Whale từ **Growth** chứ không phải Starter, Starter **unlimited widget**, credit **CÓ rollover** trên Growth/Scale, thêm bỏ-branding · sync review · custom AI creator · migration. Action zone tối đa MỘT banner. Bảng **Plans comparison** 17 dòng × 3 nhóm, **thu gọn mặc định**, cột Most popular nổi bằng badge + in đậm (s-table-cell không nhận prop layout nên không tô nền cột được). FAQ accordion một-mở-một. 9 state.',
+    prdUrl: 'https://app.notion.com/p/3b8902b339da81638dafc087ef3f937f',
     open: [
       '✅ ĐÃ DỌN 06 Aug 2026: mâu thuẫn "Free chỉ 1 format" đã chốt — đó là HỆ QUẢ của 1 widget, không phải trục gate thứ hai. Đã xoá `PLANS[].formatCount` và bỏ dòng "Formats: 1 format" khỏi bảng so sánh. Gate còn đúng hai trục: `widgetLimit` (Free 1) và `videoLimit` (Free 5). ⚠️ Bảng giá trên Notion vẫn còn dòng đó — cần Stella sửa cho khớp trước khi lên listing.',
       '🛑 **`widgetLimit` đổi theo Notion**: Free 1 · Starter/Growth/Scale **unlimited** (trước là 1/3/10/∞). Trang Widgets đang dùng field này cho state `widget-limit-reached` — giờ state đó chỉ còn áp cho Free. Cần chủ trang Widgets rà lại.',
@@ -297,6 +319,7 @@ export const MOCKUPS: Mockup[] = [
     routeFile: 'app/routes/app.settings.tsx',
     description:
       'Vẽ lại 06 Aug 2026 theo 3 tab Stella xác nhận: Integrations · Connections · Email notifications. Tab bar NGANG (primitive `TabBar` mới), aside trả về trống. Bỏ `General` (attribution window cho merchant tự vặn north-star metric) và `Staff access` (không có trong app). Integrations là DIRECTORY nhóm theo category, có ô logo + 6 status (planned · plan-gated · not connected · connecting · connected · action needed). Connections tách BACKFILL post cũ khỏi AUTO-SYNC post mới. 15 state; hai state đáng giá nhất: `reconnect-needed` (lỗi im lặng) và `plan-gated` (Free Forever KHÔNG connect được Triple Whale).',
+    prdUrl: 'https://app.notion.com/p/3b8902b339da81acb50ff2808c4aa1c1',
     open: [
       '🛑 `setupSteps` bước 1 của Home trỏ SAI TRANG: nó nói "Import from TikTok or Instagram" nhưng `href: /app/library`, còn chỗ nối account là Settings → Connections. Đây là bước ĐẦU của activation metric (install → first video live dưới 10 phút) → cần chốt: step 1 trỏ Connections, hay Library có nút nối account riêng? Modal "Add videos" của Library cũng có nút "Import from TikTok or Instagram" chưa nối đích.',
       '🛑 App gửi email cho CUSTOMER của merchant (Stella xác nhận tab Email quyết cả email gửi customer) mà `deliverables/app-listing-v1-submission.md` KHÔNG khai điều đó — chính file listing ghi Shopify reject claim không verify được. Cần chốt trước review: khai vào listing + privacy, hay bỏ customer email khỏi MVP?',
