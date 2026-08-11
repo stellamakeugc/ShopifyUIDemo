@@ -53,6 +53,8 @@ const STATES: StateOption[] = [
       {section: 'Cả trang', rule: 'KHÔNG render aside. Credit thuộc chỗ tiêu tiền, không thuộc chỗ duyệt hàng — và bỏ aside trả lại 966px cho lưới (5 cột thay vì 3).'},
       {section: 'Tag row', rule: 'Một trục phẳng ~35 chip, đúng thứ tự platform. KHÔNG sắp xếp lại và KHÔNG gom nhóm — merchant quen tay trên platform sẽ mò không ra.'},
       {section: 'Grid', rule: 'Card chỉ có video, không chữ. Tên + mô tả ở modal Details. Merchant duyệt bằng mắt trên surface này.'},
+      {section: 'Grid — hover', rule: '🛠️ CHO DEV (Stella chốt 11 Aug 2026): hover vào một thẻ thì video ĐÓ tự chạy, MUTED, và KHÔNG có control nào — không nút play/pause, không time bar, không nút mute, không fullscreen. Rời chuột ra thì dừng. Chỉ MỘT video chạy tại một thời điểm (video đang hover), không phải cả lưới. Player đầy đủ chỉ có trong modal Details. Trên thiết bị cảm ứng không có hover nên thẻ đứng im, tap là mở Details.'},
+      {section: 'Grid — hover', rule: '⚠️ Mockup CHƯA demo hành vi này: lưới đang render thumbnail tĩnh (s-image), nên hover không thấy gì. Đây là note spec, không phải mô tả cái đang chạy trước mắt.'},
       {section: 'Page action', rule: 'Không có primary action — chưa chọn template thì chưa có gì để generate. Nút disabled treo sẵn trên header làm merchant tưởng mình thiếu bước.'},
     ],
   },
@@ -269,7 +271,23 @@ export default function TemplateGallery() {
 
                           Ảnh phải là thumbnail THẬT của template, không phải ảnh stock
                           random — thẻ không có chữ nên ảnh picsum chụp tường gạch sẽ đọc
-                          thẳng ra là "template về tường gạch". */}
+                          thẳng ra là "template về tường gạch".
+
+                          ═══ 🛠️ HÀNH VI HOVER — CHO DEV (Stella chốt 11 Aug 2026) ═══
+                          Trong app thật đây KHÔNG phải `s-image` mà là một video:
+                            • hover vào thẻ → video đó tự chạy, MUTED
+                            • KHÔNG có control nào: không play/pause, không time bar,
+                              không mute, không fullscreen. Thẻ vẫn là một vùng bấm duy
+                              nhất, bấm là mở modal Details.
+                            • rời chuột → dừng
+                            • chỉ MỘT video chạy tại một thời điểm (cái đang hover), không
+                              phải cả lưới — 24 video chạy cùng lúc thì giết máy
+                            • thiết bị cảm ứng không có hover → thẻ đứng im, tap mở Details
+                          Player đầy đủ (pause · đồng hồ · mute · fullscreen · thanh tiến
+                          trình) chỉ có trong modal Details — xem `VideoPreview`.
+
+                          Mockup cố ý giữ `s-image` tĩnh: hover-play cần asset video thật
+                          cho 24 template, chưa có. Nên KHÔNG review hành vi hover ở đây. */}
                       <s-image
                         src={templateThumb(item.id)}
                         alt={`${item.title} — ${shotAlt[item.shot]}`}
