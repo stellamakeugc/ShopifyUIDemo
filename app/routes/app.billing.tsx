@@ -45,7 +45,7 @@ const STATES: StateOption[] = [
     doc: [
       {
         section: 'Cả trang',
-        rule: 'Credit chỉ được nói ở ĐÚNG MỘT chỗ dạng số liệu (card "AI videos this cycle"). Plan card nói allowance của từng plan — đó là thông tin khác, không phải nhắc lại.',
+        rule: 'Credit chỉ được nói ở ĐÚNG MỘT chỗ dạng số liệu (card "AI credits this cycle"). Plan card nói allowance của từng plan — đó là thông tin khác, không phải nhắc lại.',
       },
     ],
   },
@@ -255,7 +255,7 @@ export default function Plans() {
         {banner === 'quota-blocked' && (
           <s-banner
             tone="critical"
-            heading={`You've used all ${current.credits} AI videos on ${current.name} this cycle`}
+            heading={`You've used all ${current.credits} AI credits on ${current.name} this cycle`}
           >
             <s-paragraph>
               Credits reset on {RESET_DATE}. Everything except AI Studio keeps working — your
@@ -272,7 +272,7 @@ export default function Plans() {
         {banner === 'low-credit' && (
           <s-banner
             tone="warning"
-            heading={`${remaining} of your ${current.credits} AI videos left this cycle`}
+            heading={`${remaining} of your ${current.credits} AI credits left this cycle`}
           >
             <s-paragraph>
               Nothing is blocked yet. Credits reset on {RESET_DATE} — if you need more before then,
@@ -332,7 +332,7 @@ export default function Plans() {
 
                 <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(260px, 1fr))">
                   <s-stack direction="block" gap="small-200">
-                    <s-text type="strong">AI videos this cycle</s-text>
+                    <s-text type="strong">AI credits this cycle</s-text>
                     {current.credits === 0 ? (
                       /* Meter 0/0 đọc như lỗi → không vẽ meter. Và KHÔNG đặt CTA ở
                          đây: Compare plans nằm ngay dưới, thêm nút nữa là nói hai lần
@@ -375,7 +375,7 @@ export default function Plans() {
                           progress={usedPercent}
                           tone={remaining === 0 ? 'critical' : 'primary'}
                           hideLabel
-                          label={`${used} of ${current.credits} AI videos used this cycle`}
+                          label={`${used} of ${current.credits} AI credits used this cycle`}
                         />
                         <s-text color="subdued">
                           {/* Rollover đọc từ `PLANS`, không gõ tay: Notion cho Growth và
@@ -404,8 +404,19 @@ export default function Plans() {
                       [
                         ['Videos in your library', TOTAL_VIDEOS.toLocaleString('en-US')],
                         ['Video imports this cycle', '18'],
+                        /* Đây là CREDIT, không phải số video. `used` sinh ra từ
+                           `plan.credits` nên nhãn phải nói credit — đổi 11 Aug 2026,
+                           trước đó ghi "AI videos generated" trên đúng con số credit.
+                           Số video thật không suy ra được từ credit vì hai luồng hai
+                           giá (creator video 150 credits · product video 1 credit/ảnh)
+                           → muốn hiện "N videos generated" thì phải lấy từ job count
+                           của backend, không phải chia credit.
+                           ⚠️ Hệ quả: con số credit giờ xuất hiện HAI lần trong cùng
+                           một section (meter bên trái đã nói "380 of 500 used") — phá
+                           rule ở `globalNote`. Cần Stella chốt: bỏ dòng này, hay đổi
+                           sang video count có nguồn từ backend. */
                         [
-                          'AI videos generated this cycle',
+                          'AI credits used this cycle',
                           current.credits === 0 ? '—' : String(used),
                         ],
                       ] as const
@@ -518,7 +529,11 @@ export default function Plans() {
                     <div role="rowgroup">
                       <div className="mk-cmp__row mk-cmp__row--head" role="row">
                         <div className="mk-cmp__cell mk-cmp__cell--feature" role="columnheader">
-                          <s-text type="strong">Feature</s-text>
+                          {/* `<strong>` chứ KHÔNG `s-text type="strong"`: cái sau ra
+                              font-weight 450, bằng đoạn văn thường (§7j). Hàng đầu bảng
+                              và hàng tiêu đề nhóm là hai thứ mắt dùng để định vị trong
+                              19 dòng — nó phải đậm thật (700). */}
+                          <strong>Feature</strong>
                         </div>
                         {/* Làm nổi cột "Most popular" CHỈ bằng in đậm — tên cột và mọi
                             giá trị trong cột đó. Badge "Most popular" cố ý KHÔNG lặp lại
@@ -526,7 +541,7 @@ export default function Plans() {
                         {PLANS.map((plan) => (
                           <div key={plan.id} className="mk-cmp__cell" role="columnheader">
                             <s-stack direction="block" gap="small-500" alignItems="center">
-                              <s-text type="strong">{plan.name}</s-text>
+                              <strong>{plan.name}</strong>
                               {/* Cột plan đang dùng phải đọc ra được, KHÔNG chỉ bằng màu */}
                               {plan.id === current.id && (
                                 <s-text color="subdued">Current plan</s-text>
@@ -558,6 +573,13 @@ export default function Plans() {
                         // Hàng tiêu đề nhóm — cắt 16 dòng phẳng thành 3 khối đọc được.
                         // Nhóm lấy nguyên từ Notion (Shoppable video · AI video creation
                         // · Support), không tự nghĩ ra cách chia khác.
+                        //
+                        // Giữ CẢ nhóm đầu (Stella 11 Aug 2026): 3 khối phải được gắn
+                        // nhãn đồng đều, bỏ nhãn khối đầu là bắt merchant tự đoán 9
+                        // dòng đầu thuộc về cái gì. Lý do nó từng đọc ra như hàng dữ
+                        // liệu trống 4 cột không phải vì có mặt, mà vì bị sọc ngựa vằn
+                        // nhuộm mất màu xám header và chữ không đủ đậm — sửa ở CSS
+                        // (`:not(--group)`) và ở `<strong>` bên dưới.
                         const startsGroup =
                           index === 0 || PLAN_FEATURES[index - 1].group !== row.group;
                         return (
@@ -569,7 +591,7 @@ export default function Plans() {
                                   role="columnheader"
                                   aria-colspan={PLANS.length + 1}
                                 >
-                                  <s-text type="strong">{row.group}</s-text>
+                                  <strong>{row.group}</strong>
                                 </div>
                               </div>
                             )}
@@ -662,7 +684,7 @@ export default function Plans() {
 
 const FAQ = [
   {
-    q: 'What happens if I run out of AI videos mid-month?',
+    q: 'What happens if I run out of AI credits mid-month?',
     a: `AI Studio stops until your credits reset on ${RESET_DATE}. Nothing else changes: your videos stay live, widgets keep working, and sales tracking keeps counting. We never charge you for going over.`,
   },
   {
@@ -852,8 +874,14 @@ const PLAN_CARD_CSS = `
 .mk-cmp__row--head,
 .mk-cmp__row--group { background: #f7f7f7; }
 /* Sọc ngựa vằn — mắt bám được dòng khi quét ngang qua 5 cột. Giờ CHẮC CHẮN ăn vì hàng
-   là div của mình, không còn phụ thuộc shadow DOM của \`s-table\`. */
-.mk-cmp [role='rowgroup']:last-child .mk-cmp__row:nth-of-type(even) { background: #fafafa; }
+   là div của mình, không còn phụ thuộc shadow DOM của \`s-table\`.
+   \`:not(--group)\` là bắt buộc: selector này specificity cao hơn \`.mk-cmp__row--group\`
+   nên hàng tiêu đề nhóm rơi vào vị trí chẵn sẽ bị nhuộm #fafafa và đọc ra như một hàng
+   dữ liệu trống 4 cột. Thêm/bớt một feature là parity đổi → phải chặn ở đây, không thể
+   dựa vào việc "hiện tại nó đang rơi vào vị trí lẻ". */
+.mk-cmp [role='rowgroup']:last-child .mk-cmp__row:nth-of-type(even):not(.mk-cmp__row--group) {
+  background: #fafafa;
+}
 .mk-cmp__cell {
   padding: 12px 16px;
   min-inline-size: 0;
@@ -929,8 +957,8 @@ function PlanCard({
             </span>
             <s-text color="subdued">
               {plan.credits === 0
-                ? 'No AI videos included'
-                : `${plan.credits.toLocaleString('en-US')} AI videos included`}
+                ? 'No AI credits included'
+                : `${plan.credits.toLocaleString('en-US')} AI credits included`}
             </s-text>
           </s-stack>
 
@@ -1036,7 +1064,7 @@ function ConfirmModal({
           <>
             <s-paragraph>
               You&apos;ll be charged ${target.price} per month and get{' '}
-              {target.credits.toLocaleString('en-US')} AI videos per cycle — up from{' '}
+              {target.credits.toLocaleString('en-US')} AI credits per cycle — up from{' '}
               {current.credits === 0 ? 'none' : current.credits.toLocaleString('en-US')} on{' '}
               {current.name}.
             </s-paragraph>
@@ -1049,7 +1077,7 @@ function ConfirmModal({
           <>
             <s-unordered-list>
               <s-list-item>
-                AI videos drop from{' '}
+                AI credits drop from{' '}
                 {current.credits === 0 ? 'none' : current.credits.toLocaleString('en-US')} to{' '}
                 {target.credits === 0 ? 'none' : target.credits.toLocaleString('en-US')} per month
               </s-list-item>
