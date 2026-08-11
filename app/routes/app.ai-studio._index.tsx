@@ -78,7 +78,8 @@ const STATES: StateOption[] = [
     doc: [
       {section: 'Modal', rule: 'Preview 9:16 bên trái, tên + mô tả dài bên phải — đúng bố cục platform. Nút nói rõ giá: "Use this template · 150 credits".'},
       {section: 'Modal', rule: 'Video TỰ CHẠY khi mở nên nút mặc định là ⏸ Pause, không phải ▶ Play — hiện Play lúc đang chạy là nói ngược. Thanh điều khiển nằm DƯỚI ảnh, không overlay: overlay cần chữ trắng trên nền tối mà s-text color chỉ có subdued|base.'},
-      {section: 'Modal', rule: 'CHỈ có tên + mô tả, đúng platform. Đã bỏ hàng tag, khối "Creator in this template" và dòng thời lượng — cả ba nhắc lại thứ đã có chỗ khác. Tên creator vẫn nằm dưới mỗi thẻ ở lưới và ở section Creator and voice của trang compose.'},
+      {section: 'Modal', rule: 'CHỈ có tên + mô tả, đúng platform. Đã bỏ hàng tag, khối "Creator in this template" và dòng thời lượng — cả ba nhắc lại thứ đã có chỗ khác.'},
+      {section: '⚠️ Tên creator', rule: 'Stella bỏ dòng tên creator khỏi thẻ ở lưới (11 Aug 2026) → giờ tên creator của template KHÔNG xuất hiện ở đâu trong app. Merchant không biết trước khuôn mặt nào sẽ chạy trong video của mình. Muốn trả lại thì chỗ đúng là modal Details, không phải thẻ ở lưới.'},
     ],
   },
   {
@@ -259,35 +260,24 @@ export default function TemplateGallery() {
                       commandFor="ad-details"
                       onClick={() => setDetailsId(item.id)}
                     >
-                      {/* Card = CHỈ video, đúng platform. Badge New là thứ duy nhất đè
-                          lên, và nó đứng dưới ảnh chứ không absolute — Polaris không có
-                          overlay, mà một badge lệch hàng còn tệ hơn không có badge.
+                      {/* Card = CHỈ video, không một chữ nào (Stella chốt 11 Aug 2026).
+                          Đã bỏ dòng tên creator và dòng `{N}s` / badge `New` — merchant
+                          duyệt surface này bằng MẮT, chữ dưới mỗi ô chỉ làm lưới rối mà
+                          không giúp quyết định nhanh hơn. Tên + mô tả nằm ở modal Details.
 
-                          Ô giữ chỗ chứ KHÔNG phải ảnh stock: thẻ này không có chữ nào
-                          nên ảnh picsum chụp tường gạch sẽ đọc thẳng ra là "template về
-                          tường gạch". Xem `MediaPlaceholder` trong primitives.tsx. */}
-                      <s-stack direction="block" gap="small-500">
-                        <s-image
-                          src={templateThumb(item.id)}
-                          alt={`${item.title} — ${shotAlt[item.shot]}`}
-                          aspectRatio="9/16"
-                          objectFit="cover"
-                          borderRadius="base"
-                          loading="lazy"
-                        />
-                        {/* Platform để thẻ trần không chữ, nhưng giữ MỘT dòng tên creator:
-                            output sẽ mang đúng khuôn mặt này, merchant phải biết trước khi
-                            bấm chứ không phải sau (research §2.3). */}
-                        <s-text color="subdued">{item.creator ?? 'No one on camera'}</s-text>
-                        {/* Dòng badge LUÔN có nội dung: thẻ có "New" và thẻ không có phải
-                            cao bằng nhau, không thì hàng so le (bắt được trong browser
-                            07 Aug 2026). Cùng cách tile ảnh của tab catalog đang làm. */}
-                        {item.isNew ? (
-                          <s-badge tone="info">New</s-badge>
-                        ) : (
-                          <s-text color="subdued">{item.durationSec}s</s-text>
-                        )}
-                      </s-stack>
+                          Bỏ luôn `s-stack`: một ảnh thì không cần khối xếp.
+
+                          Ảnh phải là thumbnail THẬT của template, không phải ảnh stock
+                          random — thẻ không có chữ nên ảnh picsum chụp tường gạch sẽ đọc
+                          thẳng ra là "template về tường gạch". */}
+                      <s-image
+                        src={templateThumb(item.id)}
+                        alt={`${item.title} — ${shotAlt[item.shot]}`}
+                        aspectRatio="9/16"
+                        objectFit="cover"
+                        borderRadius="base"
+                        loading="lazy"
+                      />
                     </s-clickable>
                   ))}
                 </s-grid>
@@ -330,10 +320,11 @@ export default function TemplateGallery() {
                   đã có chỗ khác — tag chính là bộ lọc merchant vừa bấm để tới đây, thời
                   lượng nằm trong câu mô tả và trên đồng hồ của player.
 
-                  Tên creator KHÔNG mất: nó vẫn hiện dưới mỗi thẻ ở lưới, và ở section
-                  "Creator and voice" của trang compose. Yêu cầu disclosure ở
-                  `research-ai-library-avatars.md` §2.3 vẫn được đáp ứng, chỉ là không lặp
-                  lần thứ ba. */}
+                  ⚠️ 11 Aug 2026: Stella bỏ luôn dòng tên creator dưới mỗi thẻ ở lưới, nên
+                  tên creator giờ KHÔNG còn ở đâu trong app. Yêu cầu disclosure ở
+                  `research-ai-library-avatars.md` §2.3 hiện KHÔNG được đáp ứng — merchant
+                  không biết trước khuôn mặt nào sẽ chạy trong video của mình. Muốn trả lại
+                  thì đây là chỗ đúng (modal Details), không phải thẻ ở lưới. */}
 
               {useBlockedReason && (
                 <s-box background="subdued" borderRadius="base" padding="small">
@@ -409,9 +400,10 @@ function GalleryPageNotes() {
           </s-list-item>
           <s-list-item>
             <s-text color="subdued">
-              Modal có dòng <s-text type="strong">&quot;Creator in this template&quot;</s-text> —
-              platform không có. Thêm vì output giữ nguyên người này: một khuôn mặt sẽ chạy trong
-              quảng cáo của N merchant với N kịch bản (research §2.3).
+              ⚠️ <s-text type="strong">Tên creator không còn ở đâu trong app</s-text> (Stella bỏ
+              dòng dưới thẻ 11 Aug 2026, khối trong modal đã bỏ 07 Aug). Output giữ nguyên khuôn
+              mặt của template — một khuôn mặt sẽ chạy trong quảng cáo của N merchant với N kịch
+              bản, nên merchant nên biết trước khi bấm. Muốn trả lại thì chỗ đúng là modal Details.
             </s-text>
           </s-list-item>
         </s-unordered-list>
