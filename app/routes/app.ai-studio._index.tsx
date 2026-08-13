@@ -38,6 +38,7 @@ import {EmptyState, FilterPills, VideoPreview} from '../components/primitives';
 import {
   VIDEO_CREDITS,
   TOTAL_TEMPLATES,
+  planCredits,
   shotAlt,
   templateTags,
   templateThumb,
@@ -169,8 +170,13 @@ export default function TemplateGallery() {
 
         <AiStudioTabs active="/app/ai-studio" />
 
+        {/* Số credit lấy từ `PLANS` (shop mockup ở plan Scale) — hardcode "2,500" đã sai
+            ngay hôm pricing đổi Scale thành 4.500 (13 Aug 2026) */}
         {quotaBlocked && (
-          <s-banner tone="critical" heading="You've used all 2,500 AI credits">
+          <s-banner
+            tone="critical"
+            heading={`You've used all ${planCredits('scale').toLocaleString('en-US')} AI credits`}
+          >
             <s-paragraph>
               Credits reset on 1 September. You can still browse the library and open a template —
               you just can&apos;t generate until then.

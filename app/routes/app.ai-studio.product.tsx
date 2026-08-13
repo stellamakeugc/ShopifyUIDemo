@@ -34,7 +34,7 @@ import JobProgress, {type JobStatus} from '../components/JobProgress';
 import StateSwitcher from '../components/StateSwitcher';
 import type {StateOption} from '../components/StateSwitcher';
 import {CountdownRing, EmptyState, FilterPills} from '../components/primitives';
-import {catalogProducts, productImage, promptPresets} from '../data/sample';
+import {catalogProducts, planCredits, productImage, promptPresets} from '../data/sample';
 import type {CatalogProduct} from '../data/sample';
 
 /** Ngưỡng coi là batch lớn → phải confirm có SỐ LƯỢNG trước khi đốt credit */
@@ -96,7 +96,7 @@ const STATES: StateOption[] = [
   },
   {
     value: 'low-credit',
-    label: 'Low credit — còn 420/2500 (≤20%)',
+    label: `Low credit — còn 420/${planCredits('scale')} (≤20%)`,
     doc: [
       {section: 'Aside', rule: 'CreditMeter tự bật warning ở ≤20% — nói TRƯỚC khi hết, không chờ chặn mới nói. Vẫn generate được: đây là cảnh báo, không phải chặn.'},
     ],
@@ -189,7 +189,8 @@ type Scenario = {
   imagePrompts?: Record<string, string>;
 };
 
-const TOTAL_CREDITS = 2500;
+/** Mockup giả định shop ở plan Scale — lấy số từ `PLANS`, đừng gõ tay (xem `planCredits`) */
+const TOTAL_CREDITS = planCredits('scale');
 const DEMO_PROMPT =
   'Show the product from several angles in natural daylight. Slow, steady camera movement.';
 

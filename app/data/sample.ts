@@ -998,6 +998,34 @@ export const promptPresets = [
   },
 ];
 
+/* ════════════════════════════════════════════════════════════════════════════
+   GIÁ MỘT VIDEO — hằng số nối Billing với AI Studio
+   ────────────────────────────────────────────────────────────────────────────
+   Khai báo Ở ĐÂY, TRÊN `PLANS`, chứ không ở khối AI Studio phía dưới: `PLAN_FEATURES`
+   chạy `PLANS.map()` ngay lúc load module để tính số video mỗi plan, mà `const` phía
+   dưới thì còn trong TDZ → đọc là ReferenceError. Bẫy này typecheck KHÔNG bắt.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Giá MỘT video: **150 credits** (Stella chốt 08 Aug 2026).
+ * Khớp nút "Recreate (150 credits)" trên screenshot platform.
+ *
+ * Dùng CHUNG cho: nhãn ở gallery · nút Generate ở compose · và số video/tháng in trên
+ * trang Billing. Ba chỗ tính riêng là ba số lệch nhau — cách nhanh nhất để merchant
+ * mất tin vào bảng giá.
+ *
+ * ⚠️ Tab **Product video** lại tính **1 credit = 1 video** (`app.ai-studio.product.tsx`).
+ * Hai giá cho hai loại video là chuyện có thật, nhưng nghĩa là số video in trên trang
+ * Billing chỉ đúng cho **Creator video**. Cần Duong chốt cách nói một câu cho merchant.
+ */
+export const VIDEO_CREDITS = 150;
+
+/**
+ * Số video/tháng suy từ credit của plan. Làm tròn XUỐNG: hứa 13 rồi chỉ làm được 13,33
+ * thì không ai phàn nàn, hứa 14 mà hết credit ở video thứ 14 là support ticket.
+ */
+export const videosFromCredits = (credits: number) => Math.floor(credits / VIDEO_CREDITS);
+
 /**
  * ═══ NGUỒN SỰ THẬT: Notion → Execution Plan → **Tactic 2 · Pricing proposal** ═══
  * https://app.notion.com/p/3ad902b339da8112a03fdfef4b00aa8a
@@ -1007,6 +1035,13 @@ export const promptPresets = [
  * *"Pricing - as it appears on the app listing"* và *"Feature comparison by plan"*.
  *
  * Bản mockup trước LỆCH KHỎI NOTION ở 6 chỗ, đều theo hướng bán thiếu:
+ *
+ * ⚠️ **PRICING ĐÃ ĐỔI 13 Aug 2026 (Stella), KHÔNG còn khớp Notion:**
+ * Starter 0 → **300** · Growth 500 → **2.000** · Scale 2.500 → **4.500**. Và bỏ hẳn
+ * "Custom AI creator — your own brand actor" vì tính năng đó không tồn tại.
+ * Hệ quả kéo theo đã xử lý: AI Studio bắt đầu từ **Starter**, `isGrowthUp()` thay cho
+ * proxy `credits > 0`, thẻ + bảng in thêm số video ở 150 credit/video.
+ * Notion cần cập nhật lại theo đây, không phải ngược lại.
  *
  * | Chỗ lệch | Mockup cũ | Notion |
  * |---|---|---|
@@ -1051,6 +1086,28 @@ export interface Plan {
   removeBranding: boolean;
 }
 
+/**
+ * Giá trị đặc biệt của bảng so sánh: tính năng **CHƯA BUILD**, nhưng khi ship sẽ thuộc
+ * plan này (Stella 13 Aug 2026 — Triple Whale + sync review đều chưa có).
+ *
+ * Vì sao KHÔNG để ✓: ✓ là lời hứa merchant trả tiền hôm nay để đổi lấy. Và vì sao không
+ * xoá hẳn như "Custom AI creator": hai cái này CÓ trên lộ trình, xoá đi thì Growth mất
+ * differentiator thật của nó. `—` cũng sai — nó đọc thành "plan này sẽ không bao giờ có".
+ *
+ * `FeatureValue` bắt đúng chuỗi này và render badge `info` thay vì text thường.
+ *
+ * ⚠️ Khai báo TRÊN `PLANS` vì `PLANS.adds` dùng `COMING_SOON_SUFFIX` ngay lúc load
+ * module — để dưới là TDZ ReferenceError, và typecheck KHÔNG bắt lỗi đó.
+ */
+export const COMING_SOON = 'Coming soon';
+
+/**
+ * Hậu tố đánh dấu bullet coming-soon trên THẺ plan. Một nguồn duy nhất cho cả chỗ viết
+ * (`PLANS.adds`) lẫn chỗ đọc (`app.billing.tsx` đổi icon ✓ → ⏱), để không có thẻ nào
+ * hiện dấu ✓ xanh cạnh một tính năng chưa build.
+ */
+export const COMING_SOON_SUFFIX = ' — coming soon';
+
 export const PLANS: Plan[] = [
   {
     id: 'free',
@@ -1075,10 +1132,16 @@ export const PLANS: Plan[] = [
     id: 'starter',
     name: 'Starter',
     price: 29,
-    credits: 0,
+    credits: 300,
     creditRollover: false,
     blurb: 'Your content, every format.',
-    adds: ['Unlimited shoppable videos and widgets', 'Remove "Powered by MakeUGC" branding'],
+    adds: [
+      'Unlimited shoppable videos and widgets',
+      'Remove "Powered by MakeUGC" branding',
+      // AI Studio bắt đầu từ ĐÂY kể từ pricing 13 Aug 2026 (Starter 0 → 300 credits).
+      // Trước đó bullet này nằm ở Growth; để nguyên là nói dối về cái gì mới ở Growth.
+      'Create AI videos',
+    ],
     popular: false,
     widgetLimit: null,
     videoLimit: null,
@@ -1088,14 +1151,18 @@ export const PLANS: Plan[] = [
     id: 'growth',
     name: 'Growth',
     price: 99,
-    credits: 500,
+    credits: 2000,
     creditRollover: true,
     blurb: 'Create AI videos, prove the revenue.',
     adds: [
-      // Notion ghi "videos & images" — bỏ "images" theo quyết định 05 Aug của Stella
-      'Create AI videos: 1000+ AI creators, 50+ languages',
-      'Revenue attribution with Triple Whale',
-      'Sync video reviews from your reviews app',
+      // Đã BỎ 'Create AI videos: 1000+ AI creators, 50+ languages' (Stella 13 Aug 2026):
+      // (1) Starter giờ đã có AI videos nên đây không còn là cái mới của Growth, và
+      // (2) claim "1000+ creators · 50+ languages" bỏ khỏi cả bảng so sánh.
+      // Cái mới thật của Growth là số credit (2.000 vs 300) + rollover + 3 dòng dưới.
+      // Hai dòng đầu CHƯA BUILD — nhãn phải nói ra ngay trên thẻ, không chỉ trong bảng
+      // so sánh (thẻ là chỗ merchant bấm Upgrade, bảng thì phải mở ra mới thấy).
+      `Revenue attribution with Triple Whale${COMING_SOON_SUFFIX}`,
+      `Sync video reviews from your reviews app${COMING_SOON_SUFFIX}`,
       'Free migration and guided setup',
     ],
     popular: true,
@@ -1107,13 +1174,13 @@ export const PLANS: Plan[] = [
     id: 'scale',
     name: 'Scale',
     price: 299,
-    credits: 2500,
+    credits: 4500,
     creditRollover: true,
     blurb: 'High-volume brands.',
-    adds: [
-      'Custom AI creator — your own brand actor',
-      'Priority support + dedicated success manager',
-    ],
+    // Đã BỎ 'Custom AI creator — your own brand actor' (Stella 13 Aug 2026):
+    // **tính năng đó không tồn tại.** Quảng cáo nó trên trang merchant bấm nút trả tiền
+    // là hứa thứ không giao được — nặng hơn hẳn một dòng copy sai.
+    adds: ['Priority support + dedicated success manager'],
     popular: false,
     widgetLimit: null,
     videoLimit: null,
@@ -1130,8 +1197,9 @@ export const PLANS: Plan[] = [
  * hơn Starter chỗ nào, merchant phải đọc hai cột rồi tự trừ trong đầu.
  *
  * ⚠️ **Giá trị phụ thuộc plan thì DERIVE từ `PLANS`, không gõ tay.** Gõ tay ở hai chỗ
- * là đảm bảo sớm muộn chúng lệch nhau — đã dính một lần với `Scale = 200` trên Home vs
- * `2.500` trên trang Billing.
+ * là đảm bảo sớm muộn chúng lệch nhau — đã dính hai lần: `Scale = 200` trên Home vs
+ * `2.500` trên Billing, rồi ba route AI Studio hardcode `2500` và sai đồng loạt hôm
+ * pricing 13 Aug 2026 đổi Scale thành 4.500. Dùng `planCredits(id)`.
  *
  * `values` theo ĐÚNG thứ tự của `PLANS` (free · starter · growth · scale).
  * `true` = có · `false` = không · string = con số/mô tả.
@@ -1145,7 +1213,25 @@ export interface PlanFeatureRow {
   values: (boolean | string)[];
 }
 
+/**
+ * Credit/tháng của một plan. Mọi mockup giả định shop đang ở plan nào thì lấy số qua
+ * đây, KHÔNG gõ tay — ba route AI Studio từng hardcode `2500` và tất cả sai cùng lúc
+ * hôm Scale đổi thành 4.500 (13 Aug 2026).
+ */
+export const planCredits = (id: string) => PLANS.find((plan) => plan.id === id)?.credits ?? 0;
+
 const unlimitedOr = (n: number | null) => (n === null ? 'Unlimited' : String(n));
+
+/**
+ * "Từ Growth trở lên" — KHÔNG dùng `p.credits > 0` làm proxy nữa (13 Aug 2026).
+ *
+ * Proxy đó đúng khi Starter có 0 credit, nhưng pricing mới cho Starter 300 → mọi dòng
+ * gate bằng `credits > 0` (Triple Whale · sync review · support · migration) tự nhảy
+ * thành ✓ cho Starter, tức bảng giá tự hứa thêm 4 tính năng. Đây là lý do proxy tiện
+ * lúc viết luôn là bug chờ ngày đổi giá.
+ */
+const isGrowthUp = (p: Plan) => p.id === 'growth' || p.id === 'scale';
+
 
 export const PLAN_FEATURES: PlanFeatureRow[] = [
   {
@@ -1184,35 +1270,40 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
     label: 'Video sales tracking (built-in)',
     values: PLANS.map(() => true),
   },
+  // HAI DÒNG NÀY CHƯA BUILD (Stella 13 Aug 2026) → `Coming soon` trên plan sẽ có nó,
+  // `—` trên plan không có. Không phải ✓: ✓ là thứ merchant trả tiền hôm nay để nhận.
   {
     group: 'Shoppable video',
     label: 'Revenue attribution with Triple Whale',
-    values: PLANS.map((p) => p.credits > 0),
+    values: PLANS.map((p) => (isGrowthUp(p) ? COMING_SOON : false)),
   },
   {
     group: 'Shoppable video',
     label: 'Sync video reviews from your reviews app',
-    values: PLANS.map((p) => p.credits > 0),
+    values: PLANS.map((p) => (isGrowthUp(p) ? COMING_SOON : false)),
   },
   {
     group: 'AI video creation',
     label: 'Monthly credits included',
-    detail: 'One product photo turns into one video.',
-    // KHÔNG viết "~500" dù Notion viết vậy: dấu ~ trong Notion là hedging NỘI BỘ
-    // ("numbers are placeholders"), còn đây là trang merchant đọc để quyết trả tiền.
-    // "~500 credits" là câu không trả lời được — được 500 hay không? Số chưa chắc thì
-    // chốt nội bộ rồi in số chính xác, đừng đẩy sự không chắc sang merchant.
+    // Đã BỎ detail "One product photo turns into one video." (13 Aug 2026): nó nói giá
+    // của tab Product video (1 credit/ảnh) trong khi dòng ngay dưới tính số video theo
+    // 150 credits. Hai giá cạnh nhau không chú thích là merchant tự trừ ra một con số
+    // thứ ba. Bỏ hẳn — số credit và số video đứng cạnh nhau đã tự nói tỉ lệ.
+    //
+    // KHÔNG viết "~500" cho DÒNG NÀY dù Notion viết vậy: dấu ~ trong Notion là hedging
+    // NỘI BỘ ("numbers are placeholders"), còn credit là con số hợp đồng — được 300 hay
+    // không? Số video thì mới được phép ~, vì nó phụ thuộc merchant dùng model nào.
     values: PLANS.map((p) => (p.credits === 0 ? false : p.credits.toLocaleString('en-US'))),
   },
   {
     group: 'AI video creation',
-    label: 'Create AI videos · 1000+ AI creators · 50+ languages',
-    values: PLANS.map((p) => p.credits > 0),
-  },
-  {
-    group: 'AI video creation',
-    label: 'Custom AI creator — your own brand actor',
-    values: PLANS.map((p) => p.id === 'scale'),
+    label: 'Create AI videos',
+    // Đã bỏ "· 1000+ AI creators · 50+ languages" và thay ✓ bằng SỐ VIDEO (Stella 13 Aug
+    // 2026). Dấu ✓ chỉ trả lời "có/không", còn câu merchant đang hỏi là "trả $99 thì
+    // làm được mấy video" — số ở đây trả lời trực tiếp câu đó.
+    values: PLANS.map((p) =>
+      p.credits === 0 ? false : `~${videosFromCredits(p.credits).toLocaleString('en-US')} videos`,
+    ),
   },
   {
     group: 'AI video creation',
@@ -1227,12 +1318,12 @@ export const PLAN_FEATURES: PlanFeatureRow[] = [
   {
     group: 'Support',
     label: 'Support level',
-    values: PLANS.map((p) => (p.credits > 0 ? 'Priority + success manager' : 'Chat')),
+    values: PLANS.map((p) => (isGrowthUp(p) ? 'Priority + success manager' : 'Chat')),
   },
   {
     group: 'Support',
     label: 'Free migration from your current video app + guided setup',
-    values: PLANS.map((p) => p.credits > 0),
+    values: PLANS.map(isGrowthUp),
   },
   // ⛔ KHÔNG có dòng "14-day free trial".
   // Notion ghi có; Stella chốt lại 06 Aug 2026: **KHÔNG có trial**, Free Forever thay
@@ -1302,17 +1393,9 @@ export interface VideoTemplate {
   isNew?: boolean;
 }
 
-/**
- * Giá MỘT video: **150 credits** (Stella chốt 08 Aug 2026).
- * Khớp nút "Recreate (150 credits)" trên screenshot platform.
- *
- * Dùng CHUNG cho cả nhãn ở gallery lẫn nút Generate ở compose — hai chỗ nói hai số là
- * cách nhanh nhất để merchant mất tin vào bảng giá.
- *
- * Ở 150/video, plan Scale 2.500 credit ≈ **16 video/tháng**. Con số này dễ thở hơn hẳn
- * giả định 750 hồi vòng trước, nhưng allowance từng plan vẫn cần Duong chốt.
- */
-export const VIDEO_CREDITS = 150;
+/* `VIDEO_CREDITS` khai báo ở khối pricing phía TRÊN (`PLAN_FEATURES` cần nó lúc load
+   module để tính số video/tháng). Ở 150/video: Starter 300 ≈ 2 video · Growth 2.000 ≈ 13
+   · Scale 4.500 ≈ 30. */
 
 const TEMPLATE_RAW: [string, string, string[], string | null, TemplateShot][] = [
   ['Casual Fashion Vlog – T-Shirt UGC', 'Creates a realistic 15-second selfie-style UGC video of a creator wearing and reviewing a T-shirt in a natural outdoor lifestyle setting. Perfect for basic tees, oversized shirts, graphic tees, streetwear, athletic T-shirts, luxury apparel, and everyday fashion brands.', ['Apparel', 'Fashion', 'UGC', 'Lifestyle'], 'Brad S.', 'selfie'],
@@ -1388,60 +1471,71 @@ export function templateById(id: string): VideoTemplate {
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   AI STUDIO → MODEL (Mode)
+   AI STUDIO → MODEL — chỉ tồn tại BÊN TRONG tính năng đổi creator
    ────────────────────────────────────────────────────────────────────────────
-   Screenshot chỉ cho thấy MỘT model: `Nova 2.0` kèm badge `Best`. Con số `750` cạnh
-   dấu `+ Credits` trên composer platform là **SỐ DƯ**, không phải giá — nó đứng yên qua
-   cả ba screenshot trong khi bộ đếm ký tự thay đổi. Giá thật là 150 (`VIDEO_CREDITS`).
+   Bảng cũ (`Draft` / `Nova 2.0` / `Nova 2.0 HD`) đã BỎ 13 Aug 2026. Nó là di sản của
+   section Quality/Mode đã park hồi 07 Aug 2026 và không route nào import — giữ một
+   bảng chết cạnh một bảng sống là mời dev đọc sai bảng.
 
-   ⏳ Ba model dưới đây: chỉ `nova-2` là THẬT. Hai cái còn lại là placeholder để
-   Mode selector không phải là vỏ rỗng và để review được state plan-gated. Cần
-   Duong cấp danh sách thật + credit cost từng cái trước khi dev build.
+   Model KHÔNG phải lựa chọn cấp trang. Giữ nguyên creator của template thì merchant
+   không chọn gì cả và trả đúng `VIDEO_CREDITS` (150). Chỉ khi ĐỔI creator mới phải
+   chọn model, vì đổi creator là dựng lại người trên khung hình — đó là việc đắt hơn,
+   và giá phụ thuộc model (Stella chốt 13 Aug 2026).
+
+   ⏳ HAI TÊN LÀ THẬT (Stella 13 Aug 2026), HAI CON SỐ LÀ TỰ ĐẶT. Cần Duong chốt:
+   giá thật của Seedance 2.0 và 2.5, và liệu 2.5 có bị chặn theo plan không. Chọn
+   250/400 vì nó tạo ra đủ ba vùng credit cần review:
+     • ≥ 400  → chọn được cả hai
+     • 250–399 → 2.5 khoá, 2.0 vẫn chạy
+     • 150–249 → KHÔNG dùng được tính năng Creator, nhưng vẫn generate được video
+                 với creator có sẵn của template (150). Đây là chỗ dễ làm sai nhất:
+                 hết credit cho Creator ≠ hết credit cho video.
    ════════════════════════════════════════════════════════════════════════════ */
 
-export interface AiModel {
+export interface CreatorModel {
   id: string;
   name: string;
-  /** Badge cạnh tên, như `Best` của Nova 2.0 */
+  /** Badge cạnh tên trong modal — một từ, không phải câu */
   badge?: string;
+  /**
+   * MỘT câu, và giữ đúng một câu (Stella 13 Aug 2026). Bản đầu hai câu cộng thêm dòng
+   * "Leaves you 2,010 of 2,260 credits" → ba câu cho một lựa chọn radio, đọc thành đoạn
+   * văn. Số credit còn lại đã có ở CreditMeter bên aside, không cần lặp trong từng option.
+   */
   blurb: string;
   credits: number;
-  /** Plan tối thiểu dùng được — dưới mức này thì radio khoá + hiện đường upgrade */
-  minPlan: 'free' | 'growth' | 'scale';
+  /** `false` = con số credits là tự đặt, chưa có Duong xác nhận */
   verified: boolean;
 }
 
-export const aiModels: AiModel[] = [
+export const creatorModels: CreatorModel[] = [
   {
-    id: 'draft',
-    name: 'Draft',
-    blurb: 'Fastest and cheapest. Good for checking a script before you commit.',
-    credits: 90,
-    minPlan: 'free',
+    id: 'seedance-2-0',
+    name: 'Seedance 2.0',
+    badge: 'Best value',
+    blurb: 'Reliable lip-sync and natural delivery.',
+    credits: 250,
     verified: false,
   },
   {
-    id: 'nova-2',
-    name: 'Nova 2.0',
-    badge: 'Best',
-    blurb: 'Sharpest lip-sync and the most natural delivery. Use this for anything you publish.',
-    credits: VIDEO_CREDITS,
-    minPlan: 'growth',
-    verified: true,
-  },
-  {
-    id: 'nova-2-hd',
-    name: 'Nova 2.0 HD',
-    blurb: 'Same model at higher resolution. Worth it for full-screen storefront players.',
-    credits: 1200,
-    minPlan: 'scale',
+    id: 'seedance-2-5',
+    name: 'Seedance 2.5',
+    badge: 'Best quality',
+    blurb: 'Sharper faces and steadier motion.',
+    credits: 400,
     verified: false,
   },
 ];
 
-export function modelById(id: string): AiModel {
-  return aiModels.find((model) => model.id === id) ?? aiModels[1];
+export function creatorModelById(id: string): CreatorModel {
+  return creatorModels.find((model) => model.id === id) ?? creatorModels[0];
 }
+
+/**
+ * Giá RẺ NHẤT để đổi được creator. Dưới ngưỡng này thì tính năng Creator khoá hẳn —
+ * tính từ bảng chứ không hardcode, để đổi giá một chỗ là mọi nơi theo.
+ */
+export const CREATOR_MODEL_MIN_CREDITS = Math.min(...creatorModels.map((m) => m.credits));
 
 /* ════════════════════════════════════════════════════════════════════════════
    AI STUDIO → ACTORS  (07 Aug 2026 — viết lại theo screenshot "Add Actors")

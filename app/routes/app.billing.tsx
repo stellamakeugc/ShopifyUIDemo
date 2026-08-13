@@ -29,7 +29,14 @@ import {Fragment, useEffect, useRef, useState} from 'react';
 import StateSwitcher from '../components/StateSwitcher';
 import type {StateOption} from '../components/StateSwitcher';
 import {ProgressBar} from '../components/primitives';
-import {PLANS, PLAN_FEATURES, TOTAL_VIDEOS} from '../data/sample';
+import {
+  COMING_SOON,
+  COMING_SOON_SUFFIX,
+  PLANS,
+  PLAN_FEATURES,
+  TOTAL_VIDEOS,
+  videosFromCredits,
+} from '../data/sample';
 import type {Plan} from '../data/sample';
 
 /** Ngưỡng cảnh báo chủ động — checklist §2: nói TRƯỚC khi hết, không chờ chặn mới nói */
@@ -229,8 +236,24 @@ export default function Plans() {
                 KHÔNG có control cho ba thứ đó; chúng được trả lời trong FAQ cuối trang.
               </s-paragraph>
               <s-paragraph color="subdued">
-                ⏳ Chỉ Scale = 2.500 credit/mo là con số verify được từ app thật. Growth = 50 là
-                phỏng đoán — cần Duong xác nhận trước khi trang này đi vào app.
+                <strong>Pricing mới 13 Aug 2026 (Stella):</strong> Starter 0 → <strong>300</strong>{' '}
+                · Growth 500 → <strong>2.000</strong> · Scale 2.500 → <strong>4.500</strong>. Số
+                video trên thẻ và trong bảng suy ra ở <strong>150 credit/video</strong>, làm tròn
+                xuống. Hai hệ quả đã xử lý cùng lúc: <strong>AI Studio giờ bắt đầu từ Starter</strong>{' '}
+                (không còn Growth), và các dòng gate bằng &quot;có credit&quot; phải đổi sang
+                &quot;từ Growth trở lên&quot; — nếu không Starter tự được thêm Triple Whale · sync
+                review · priority support · migration.
+              </s-paragraph>
+              <s-paragraph color="subdued">
+                🛑 Đã BỎ dòng <strong>&quot;Custom AI creator — your own brand actor&quot;</strong>{' '}
+                khỏi cả bảng so sánh lẫn thẻ Scale (Stella 13 Aug 2026): tính năng đó không tồn
+                tại. ⏳ Ba con số credit vẫn cần Duong xác nhận trước khi trang này vào app.
+              </s-paragraph>
+              <s-paragraph color="subdued">
+                ⚠️ Số video chỉ đúng cho <strong>Creator video</strong> (150 credit/video). Tab
+                Product video đang tính <strong>1 credit = 1 video</strong>, nên ở 300 credit
+                merchant làm được ~2 creator video HOẶC 300 product video. Cần Duong chốt cách nói
+                một câu cho merchant.
               </s-paragraph>
             </s-stack>
           }
@@ -347,7 +370,11 @@ export default function Plans() {
                             đúng chỗ merchant đọc để quyết. Derive từ `PLANS` nên đổi
                             pricing là câu này tự đúng theo. */}
                         <s-paragraph color="subdued">
-                          AI Studio starts on Growth. {current.name} covers{' '}
+                          {/* Tên plan rẻ nhất CÓ credit, derive từ `PLANS` — hardcode
+                              "Growth" đã sai ngay hôm Starter được cấp 300 credit
+                              (13 Aug 2026). */}
+                          AI Studio starts on {PLANS.find((p) => p.credits > 0)?.name ?? 'Growth'}.{' '}
+                          {current.name} covers{' '}
                           {current.widgetLimit === null
                             ? 'unlimited widgets and shoppable videos'
                             : `${current.widgetLimit} widget and up to ${current.videoLimit} shoppable videos`}
@@ -714,7 +741,14 @@ function FeatureValue({value, emphasis = false}: {value: boolean | string; empha
     // Căn giữa mọi ô giá trị (`s-table-cell` không nhận [layout] nên phải bọc stack).
     // Cột nhãn feature vẫn căn trái — mắt dò theo mép trái để tìm dòng, rồi quét ngang.
     <s-stack direction="inline" justifyContent="center">
-      {typeof value === 'string' ? (
+      {value === COMING_SOON ? (
+        /* Badge `info` chứ không text trần: "Coming soon" nằm cùng cột với "Unlimited"
+           và "~13 videos" — những thứ merchant CÓ ngay hôm nay. Đọc thành cùng một hạng
+           là hiểu sai điều duy nhất dòng này muốn nói. Badge tách nó ra khỏi cột giá trị.
+           KHÔNG in đậm theo `emphasis`: cột Most popular nổi lên là để bán, mà đây là
+           thứ chưa bán được. */
+        <s-badge tone="info">{COMING_SOON}</s-badge>
+      ) : typeof value === 'string' ? (
         // Cột "Most popular" in đậm — cách duy nhất làm nổi cột vì `s-table-cell`
         // không nhận `background`.
         emphasis ? <s-text type="strong">{value}</s-text> : <s-text>{value}</s-text>
@@ -955,10 +989,13 @@ function PlanCard({
               <span className="mk-plan__price">{plan.price === 0 ? '$0' : `$${plan.price}`}</span>
               <span className="mk-plan__per">/month</span>
             </span>
+            {/* Credit + SỐ VIDEO trên cùng một dòng (Stella 13 Aug 2026). "2,000 AI credits"
+                một mình là đơn vị nội bộ của mình; merchant quy ra được bao nhiêu video mới
+                là thứ họ so giữa 4 thẻ. `~` vì số video phụ thuộc model merchant chọn. */}
             <s-text color="subdued">
               {plan.credits === 0
                 ? 'No AI credits included'
-                : `${plan.credits.toLocaleString('en-US')} AI credits included`}
+                : `${plan.credits.toLocaleString('en-US')} AI credits included · ~${videosFromCredits(plan.credits).toLocaleString('en-US')} videos`}
             </s-text>
           </s-stack>
 
@@ -992,12 +1029,22 @@ function PlanCard({
                 đẩy lên dòng riêng, để lại dấu ✓ trôi nổi. Grid ghim icon ở cột 1, chữ
                 wrap trong cột 2. */}
             <s-grid gridTemplateColumns="max-content minmax(0, 1fr)" gap="small-300">
-              {plan.adds.map((item) => (
-                <Fragment key={item}>
-                  <s-icon type="check" tone="success" size="small" />
-                  <s-text>{item}</s-text>
-                </Fragment>
-              ))}
+              {plan.adds.map((item) => {
+                /* Bullet coming-soon KHÔNG được mang dấu ✓ xanh: ✓ ở đây nghĩa là
+                   "trả tiền plan này là có ngay". Đổi sang ⏱ neutral, chữ giữ nguyên
+                   hậu tố "— coming soon" (Stella 13 Aug 2026). */
+                const soon = item.endsWith(COMING_SOON_SUFFIX);
+                return (
+                  <Fragment key={item}>
+                    <s-icon
+                      type={soon ? 'clock' : 'check'}
+                      tone={soon ? 'neutral' : 'success'}
+                      size="small"
+                    />
+                    <s-text color={soon ? 'subdued' : 'base'}>{item}</s-text>
+                  </Fragment>
+                );
+              })}
             </s-grid>
           </s-stack>
         </s-stack>
